@@ -35,20 +35,20 @@ const CartItem: React.FC<CartItemProps> = ({ item, merchantId }) => {
           <div className="flex items-center">
             <button
               onClick={() => updateQuantity(item.id, item.quantity - 1, merchantId)}
-              className="w-8 h-8 flex items-center justify-center rounded-full bg-orange-500 text-white"
+              className="w-6 h-6 flex items-center justify-center rounded-full bg-orange-500 text-white"
             >
               <Minus size={16} />
             </button>
             <span className="mx-2 w-6 text-center">{item.quantity}</span>
             <button
               onClick={() => updateQuantity(item.id, item.quantity + 1, merchantId)}
-              className="w-8 h-8 flex items-center justify-center rounded-full bg-orange-500 text-white"
+              className="w-6 h-6 flex items-center justify-center rounded-full bg-orange-500 text-white"
             >
               <Plus size={16} />
             </button>
             <button
               onClick={() => removeFromCart(item.id, merchantId)}
-              className="ml-2 w-8 h-8 flex items-center justify-center rounded-full bg-red-500 text-white"
+              className="ml-2 w-6 h-6 flex items-center justify-center rounded-full bg-red-500 text-white"
             >
               <Trash2 size={16} />
             </button>

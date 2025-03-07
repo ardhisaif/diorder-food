@@ -7,7 +7,7 @@ import MapModal from '../components/MapModal';
 import merchantsData from '../data/merchants.json';
 import { ShoppingBag, MapPin, Plus } from 'lucide-react';
 
-const WHATSAPP_NUMBER = '082217012023';
+const WHATSAPP_NUMBER = '6282217012023';
 
 const CartPage: React.FC = () => {
   const { 
@@ -15,7 +15,6 @@ const CartPage: React.FC = () => {
     getMerchantTotal,
     customerInfo,
     updateCustomerInfo,
-    getCartTotal,
     clearCart
   } = useCart();
   const navigate = useNavigate();
@@ -57,7 +56,7 @@ const CartPage: React.FC = () => {
     }, 0);
 
     // Format the order message for WhatsApp
-    let message = `*Pesanan Baru dari DiOrder*\n\n`;
+    let message = `*Pesanan Baru dari Diorder*\n\n`;
     message += `*Nama*: ${customerInfo.name}\n`;
     message += `*Alamat*: ${customerInfo.address}\n\n`;
     
