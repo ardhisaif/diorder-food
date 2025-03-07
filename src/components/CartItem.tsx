@@ -29,7 +29,7 @@ const CartItem: React.FC<CartItemProps> = ({ item, merchantId }) => {
       <div className="ml-4 flex-1">
         <h3 className="font-medium">{item.name}</h3>
         <div className="flex justify-between items-center mt-2">
-          <div className="text-orange-500 font-bold">
+            <div className="text-orange-500 font-bold mr-4">
             {formatCurrency(item.price)}
           </div>
           <div className="flex items-center">

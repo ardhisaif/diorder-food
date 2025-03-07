@@ -52,7 +52,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ item, merchantId }) => {
           <div className="flex items-center">
             <button
               onClick={handleDecrement}
-              className={`w-8 h-8 flex items-center justify-center rounded-full ${
+              className={`w-6 h-6 flex items-center justify-center rounded-full ${
                 quantity > 0 ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-400'
               }`}
               disabled={quantity === 0}
@@ -62,7 +62,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ item, merchantId }) => {
             <span className="mx-2 w-6 text-center">{quantity}</span>
             <button
               onClick={handleIncrement}
-              className="w-8 h-8 flex items-center justify-center rounded-full bg-orange-500 text-white"
+              className="w-6 h-6 flex items-center justify-center rounded-full bg-orange-500 text-white"
             >
               <Plus size={16} />
             </button>

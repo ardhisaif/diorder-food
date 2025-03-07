@@ -15,6 +15,8 @@ const Header: React.FC<HeaderProps> = ({
   const navigate = useNavigate();
   const { getItemCount } = useCart();
   const itemCount = getItemCount();
+  console.log(itemCount);
+  
 
   return (
     <header className="bg-orange-500 text-white py-4 px-4 sticky top-0 z-10">

@@ -4,7 +4,6 @@ export interface Merchant {
   address: string;
   logo: string;
   delivery_fee: number;
-  whatsapp: string;
 }
 
 export interface MenuItem {
