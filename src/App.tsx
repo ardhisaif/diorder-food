@@ -1,3 +1,4 @@
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { CartProvider } from './context/CartContext';
 import HomePage from './pages/HomePage';
@@ -12,7 +13,7 @@ function App() {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/menu/:merchantId" element={<MenuPage />} />
-            <Route path="/cart/:merchantId" element={<CartPage />} />
+            <Route path="/cart" element={<CartPage />} />
           </Routes>
         </div>
       </Router>

@@ -8,7 +8,7 @@ import { Store } from 'lucide-react';
 const HomePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-100">
-      <Header title="Diorder" />
+      <Header title="DiOrder" />
       
       <main className="container mx-auto px-4 py-6">
         <div className="bg-orange-100 rounded-lg p-4 mb-6 flex items-center">

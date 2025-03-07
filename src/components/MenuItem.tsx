@@ -5,11 +5,13 @@ import { Plus, Minus } from 'lucide-react';
 
 interface MenuItemProps {
   item: MenuItemType;
+  merchantId: number;
 }
 
-const MenuItem: React.FC<MenuItemProps> = ({ item }) => {
-  const { cartItems, addToCart, updateQuantity } = useCart();
+const MenuItem: React.FC<MenuItemProps> = ({ item, merchantId }) => {
+  const { getMerchantItems, addToCart, updateQuantity } = useCart();
   
+  const cartItems = getMerchantItems(merchantId);
   const cartItem = cartItems.find((cartItem) => cartItem.id === item.id);
   const quantity = cartItem ? cartItem.quantity : 0;
 
@@ -22,12 +24,12 @@ const MenuItem: React.FC<MenuItemProps> = ({ item }) => {
   };
 
   const handleIncrement = () => {
-    addToCart(item);
+    addToCart(item, merchantId);
   };
 
   const handleDecrement = () => {
     if (quantity > 0) {
-      updateQuantity(item.id, quantity - 1);
+      updateQuantity(item.id, quantity - 1, merchantId);
     }
   };
 

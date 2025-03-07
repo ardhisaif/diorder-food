@@ -5,9 +5,10 @@ import { Plus, Minus, Trash2 } from 'lucide-react';
 
 interface CartItemProps {
   item: CartItemType;
+  merchantId: number;
 }
 
-const CartItem: React.FC<CartItemProps> = ({ item }) => {
+const CartItem: React.FC<CartItemProps> = ({ item, merchantId }) => {
   const { updateQuantity, removeFromCart } = useCart();
 
   const formatCurrency = (amount: number) => {
@@ -33,20 +34,20 @@ const CartItem: React.FC<CartItemProps> = ({ item }) => {
           </div>
           <div className="flex items-center">
             <button
-              onClick={() => updateQuantity(item.id, item.quantity - 1)}
+              onClick={() => updateQuantity(item.id, item.quantity - 1, merchantId)}
               className="w-8 h-8 flex items-center justify-center rounded-full bg-orange-500 text-white"
             >
               <Minus size={16} />
             </button>
             <span className="mx-2 w-6 text-center">{item.quantity}</span>
             <button
-              onClick={() => updateQuantity(item.id, item.quantity + 1)}
+              onClick={() => updateQuantity(item.id, item.quantity + 1, merchantId)}
               className="w-8 h-8 flex items-center justify-center rounded-full bg-orange-500 text-white"
             >
               <Plus size={16} />
             </button>
             <button
-              onClick={() => removeFromCart(item.id)}
+              onClick={() => removeFromCart(item.id, merchantId)}
               className="ml-2 w-8 h-8 flex items-center justify-center rounded-full bg-red-500 text-white"
             >
               <Trash2 size={16} />

@@ -1,89 +1,178 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { CartItem, CustomerInfo, MenuItem } from '../types';
+import merchantsData from '../data/merchants.json';
 
 interface CartContextType {
   cartItems: CartItem[];
-  addToCart: (item: MenuItem) => void;
-  removeFromCart: (itemId: number) => void;
-  updateQuantity: (itemId: number, quantity: number) => void;
+  addToCart: (item: MenuItem, merchantId: number) => void;
+  removeFromCart: (itemId: number, merchantId: number) => void;
+  updateQuantity: (itemId: number, quantity: number, merchantId: number) => void;
   clearCart: () => void;
+  clearMerchantCart: (merchantId: number) => void;
   customerInfo: CustomerInfo;
   updateCustomerInfo: (info: CustomerInfo) => void;
   getCartTotal: () => number;
+  getMerchantTotal: (merchantId: number) => number;
   getItemCount: () => number;
+  getMerchantItems: (merchantId: number) => CartItem[];
+  getMerchantInfo: (merchantId: number) => { name: string; delivery_fee: number; whatsapp: string } | null;
 }
+
+interface CartState {
+  items: {
+    [merchantId: number]: CartItem[];
+  };
+  customerInfo: CustomerInfo;
+}
+
+const CART_STORAGE_KEY = 'diorder_cart_state';
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
-    name: '',
-    address: '',
-    notes: '',
-  });
+const getInitialState = (): CartState => {
+  if (typeof window === 'undefined') return {
+    items: {},
+    customerInfo: { name: '', address: '', notes: '' }
+  };
 
-  const addToCart = (item: MenuItem) => {
-    setCartItems((prevItems) => {
-      const existingItem = prevItems.find((cartItem) => cartItem.id === item.id);
+  const savedState = localStorage.getItem(CART_STORAGE_KEY);
+  return savedState ? JSON.parse(savedState) : {
+    items: {},
+    customerInfo: { name: '', address: '', notes: '' }
+  };
+};
+
+export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [state, setState] = useState<CartState>(getInitialState);
+
+  useEffect(() => {
+    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(state));
+  }, [state]);
+
+  const addToCart = (item: MenuItem, merchantId: number) => {
+    setState(prevState => {
+      const merchantItems = prevState.items[merchantId] || [];
+      const existingItem = merchantItems.find(cartItem => cartItem.id === item.id);
       
-      if (existingItem) {
-        return prevItems.map((cartItem) =>
-          cartItem.id === item.id
-            ? { ...cartItem, quantity: cartItem.quantity + 1 }
-            : cartItem
-        );
-      }
-      
-      return [...prevItems, { ...item, quantity: 1 }];
+      const updatedMerchantItems = existingItem
+        ? merchantItems.map(cartItem =>
+            cartItem.id === item.id
+              ? { ...cartItem, quantity: cartItem.quantity + 1 }
+              : cartItem
+          )
+        : [...merchantItems, { ...item, quantity: 1 }];
+
+      return {
+        ...prevState,
+        items: {
+          ...prevState.items,
+          [merchantId]: updatedMerchantItems
+        }
+      };
     });
   };
 
-  const removeFromCart = (itemId: number) => {
-    setCartItems((prevItems) => prevItems.filter((item) => item.id !== itemId));
+  const removeFromCart = (itemId: number, merchantId: number) => {
+    setState(prevState => ({
+      ...prevState,
+      items: {
+        ...prevState.items,
+        [merchantId]: (prevState.items[merchantId] || []).filter(item => item.id !== itemId)
+      }
+    }));
   };
 
-  const updateQuantity = (itemId: number, quantity: number) => {
+  const updateQuantity = (itemId: number, quantity: number, merchantId: number) => {
     if (quantity <= 0) {
-      removeFromCart(itemId);
+      removeFromCart(itemId, merchantId);
       return;
     }
 
-    setCartItems((prevItems) =>
-      prevItems.map((item) =>
-        item.id === itemId ? { ...item, quantity } : item
-      )
-    );
+    setState(prevState => ({
+      ...prevState,
+      items: {
+        ...prevState.items,
+        [merchantId]: (prevState.items[merchantId] || []).map(item =>
+          item.id === itemId ? { ...item, quantity } : item
+        )
+      }
+    }));
   };
 
   const clearCart = () => {
-    setCartItems([]);
+    setState(prevState => ({
+      ...prevState,
+      items: {}
+    }));
+  };
+
+  const clearMerchantCart = (merchantId: number) => {
+    setState(prevState => {
+      const { [merchantId]: _, ...remainingItems } = prevState.items;
+      return {
+        ...prevState,
+        items: remainingItems
+      };
+    });
   };
 
   const updateCustomerInfo = (info: CustomerInfo) => {
-    setCustomerInfo(info);
+    setState(prevState => ({
+      ...prevState,
+      customerInfo: info
+    }));
   };
 
   const getCartTotal = () => {
-    return cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
+    return Object.values(state.items).reduce((total, merchantItems) => 
+      total + merchantItems.reduce((merchantTotal, item) => 
+        merchantTotal + (item.price * item.quantity), 0
+      ), 0
+    );
+  };
+
+  const getMerchantTotal = (merchantId: number) => {
+    return (state.items[merchantId] || []).reduce(
+      (total, item) => total + item.price * item.quantity,
+      0
+    );
   };
 
   const getItemCount = () => {
-    return cartItems.reduce((count, item) => count + item.quantity, 0);
+    return Object.values(state.items).reduce((total, merchantItems) => 
+      total + merchantItems.reduce((count, item) => count + item.quantity, 0), 0
+    );
+  };
+
+  const getMerchantItems = (merchantId: number) => {
+    return state.items[merchantId] || [];
+  };
+
+  const getMerchantInfo = (merchantId: number) => {
+    const merchant = merchantsData.find(m => m.id === merchantId);
+    return merchant ? {
+      name: merchant.name,
+      delivery_fee: merchant.delivery_fee,
+      whatsapp: merchant.whatsapp
+    } : null;
   };
 
   return (
     <CartContext.Provider
       value={{
-        cartItems,
+        cartItems: Object.values(state.items).flat(),
         addToCart,
         removeFromCart,
         updateQuantity,
         clearCart,
-        customerInfo,
+        clearMerchantCart,
+        customerInfo: state.customerInfo,
         updateCustomerInfo,
         getCartTotal,
+        getMerchantTotal,
         getItemCount,
+        getMerchantItems,
+        getMerchantInfo
       }}
     >
       {children}

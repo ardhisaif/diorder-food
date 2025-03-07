@@ -2,17 +2,15 @@
   {
     "id": 1,
     "name": "Mi Netijen",
-    "address": "Dsn. Duduk rt 8b rw 05, Duduksampeyan",
+    "address": "Jl. Contoh No. 123",
     "logo": "https://images.unsplash.com/photo-1555126634-323283e090fa?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=150&h=150&q=80",
-    "delivery_fee": 5000,
-    "whatsapp": "6282217012023"
+    "delivery_fee": 10000
   },
   {
     "id": 2,
     "name": "Seblak Bejo",
-    "address": "Jl. Ps., Duduk Sampeyan",
+    "address": "Jl. Ngopi No. 456",
     "logo": "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=150&h=150&q=80",
-    "delivery_fee": 5000,
-    "whatsapp": "6282217012023"
+    "delivery_fee": 5000
   }
 ]

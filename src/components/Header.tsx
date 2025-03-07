@@ -6,15 +6,11 @@ import { useCart } from '../context/CartContext';
 interface HeaderProps {
   title: string;
   showBack?: boolean;
-  showCart?: boolean;
-  merchantId?: number;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
   title, 
-  showBack = false, 
-  showCart = false,
-  merchantId
+  showBack = false
 }) => {
   const navigate = useNavigate();
   const { getItemCount } = useCart();
@@ -34,9 +30,9 @@ const Header: React.FC<HeaderProps> = ({
           )}
           <h1 className="text-xl font-bold">{title}</h1>
         </div>
-        {showCart && itemCount > 0 && (
+        {itemCount > 0 && (
           <button 
-            onClick={() => navigate(`/cart/${merchantId}`)} 
+            onClick={() => navigate('/cart')} 
             className="relative"
           >
             <ShoppingBag size={24} />
