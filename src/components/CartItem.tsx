@@ -46,12 +46,6 @@ const CartItem: React.FC<CartItemProps> = ({ item, merchantId }) => {
             >
               <Plus size={16} />
             </button>
-            <button
-              onClick={() => removeFromCart(item.id, merchantId)}
-              className="ml-2 w-6 h-6 flex items-center justify-center rounded-full bg-red-500 text-white"
-            >
-              <Trash2 size={16} />
-            </button>
           </div>
         </div>
         <div className="mt-1 text-sm text-gray-700">
