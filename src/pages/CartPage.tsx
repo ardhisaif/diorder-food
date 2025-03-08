@@ -1,13 +1,19 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import CartItem from '../components/CartItem';
 import Header from '../components/Header';
-import MapModal from '../components/MapModal';
 import merchantsData from '../data/merchants.json';
-import { ShoppingBag, MapPin, Plus } from 'lucide-react';
+import { ShoppingBag, Plus } from 'lucide-react';
 
-const WHATSAPP_NUMBER = '6282217012023';
+const WHATSAPP_NUMBER = '082217012023';
+const DELIVERY_FEE = 5000;
+const VILLAGES = [
+  'Duduksampeyan',
+  'Sumengko',
+  'Petisbenem',
+  'Setrohadi'
+];
 
 const CartPage: React.FC = () => {
   const { 
@@ -18,7 +24,6 @@ const CartPage: React.FC = () => {
     clearCart
   } = useCart();
   const navigate = useNavigate();
-  const [isMapModalOpen, setIsMapModalOpen] = useState(false);
 
   // Get all merchants that have items in the cart
   const merchantsWithItems = merchantsData.filter(m => 
@@ -33,7 +38,7 @@ const CartPage: React.FC = () => {
     }).format(amount);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     updateCustomerInfo({
       ...customerInfo,
@@ -41,38 +46,40 @@ const CartPage: React.FC = () => {
     });
   };
 
-  const handleSelectLocation = (address: string) => {
-    updateCustomerInfo({
-      ...customerInfo,
-      address,
-    });
-  };
-
   const handleCheckout = () => {
-    // Calculate total including delivery fees
-    const totalWithDelivery = merchantsWithItems.reduce((total, merchant) => {
-      const subtotal = getMerchantTotal(merchant.id);
-      return total + subtotal + merchant.delivery_fee;
+    if (!customerInfo.name || !customerInfo.village || !customerInfo.addressDetail) {
+      alert('Mohon lengkapi data pengiriman');
+      return;
+    }
+
+    const subtotal = merchantsWithItems.reduce((total, merchant) => {
+      return total + getMerchantTotal(merchant.id);
     }, 0);
+    
+    const totalWithDelivery = subtotal + DELIVERY_FEE;
 
     // Format the order message for WhatsApp
-    let message = `*Pesanan Baru dari Diorder*\n\n`;
+    let message = `*Pesanan Baru dari DiOrder*\n\n`;
     message += `*Nama*: ${customerInfo.name}\n`;
-    message += `*Alamat*: ${customerInfo.address}\n\n`;
+    message += `*Alamat*:\n`;
+    message += `Kecamatan: Duduksampeyan\n`;
+    message += `Desa: ${customerInfo.village}\n`;
+    message += `Detail Alamat: ${customerInfo.addressDetail}\n\n`;
     
     // Add orders from each merchant
     merchantsWithItems.forEach(merchant => {
       const items = getMerchantItems(merchant.id);
-      const subtotal = getMerchantTotal(merchant.id);
+      const merchantSubtotal = getMerchantTotal(merchant.id);
       
       message += `*Detail Pesanan dari ${merchant.name}*:\n`;
       items.forEach((item) => {
         message += `- ${item.name} (${item.quantity}x) = ${formatCurrency(item.price * item.quantity)}\n`;
       });
-      message += `Subtotal: ${formatCurrency(subtotal)}\n`;
-      message += `Ongkir: ${formatCurrency(merchant.delivery_fee)}\n\n`;
+      message += `Subtotal: ${formatCurrency(merchantSubtotal)}\n\n`;
     });
     
+    message += `Subtotal Pesanan: ${formatCurrency(subtotal)}\n`;
+    message += `Ongkir: ${formatCurrency(DELIVERY_FEE)}\n`;
     message += `*Total Keseluruhan*: ${formatCurrency(totalWithDelivery)}\n\n`;
     
     if (customerInfo.notes) {
@@ -93,10 +100,10 @@ const CartPage: React.FC = () => {
   };
 
   const cartEmpty = merchantsWithItems.length === 0;
-  const totalAmount = merchantsWithItems.reduce((total, merchant) => {
-    const subtotal = getMerchantTotal(merchant.id);
-    return total + subtotal + merchant.delivery_fee;
+  const subtotal = merchantsWithItems.reduce((total, merchant) => {
+    return total + getMerchantTotal(merchant.id);
   }, 0);
+  const totalAmount = subtotal + DELIVERY_FEE;
 
   return (
     <div className="min-h-screen bg-gray-100 pb-32">
@@ -137,31 +144,52 @@ const CartPage: React.FC = () => {
               </div>
               
               <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="address">
-                  Alamat Pengiriman
+                <label className="block text-gray-700 text-sm font-bold mb-2">
+                  Kecamatan
                 </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    id="address"
-                    name="address"
-                    value={customerInfo.address}
-                    onChange={handleInputChange}
-                    className="shadow appearance-none border rounded w-full py-2 pl-3 pr-10 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                    placeholder="Masukkan alamat lengkap"
-                    required
-                  />
-                  <button 
-                    onClick={() => setIsMapModalOpen(true)}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-orange-500"
-                    title="Pilih lokasi dari peta"
-                  >
-                    <MapPin size={20} />
-                  </button>
-                </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  Klik ikon peta untuk memilih lokasi dari Google Maps
-                </p>
+                <input
+                  type="text"
+                  value="Duduksampeyan"
+                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-500 leading-tight bg-gray-100"
+                  disabled
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="village">
+                  Desa
+                </label>
+                <select
+                  id="village"
+                  name="village"
+                  value={customerInfo.village}
+                  onChange={handleInputChange}
+                  className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                  required
+                >
+                  <option value="">Pilih Desa</option>
+                  {VILLAGES.map(village => (
+                    <option key={village} value={village}>
+                      {village}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="mb-4">
+                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="addressDetail">
+                  Detail Alamat
+                </label>
+                <textarea
+                  id="addressDetail"
+                  name="addressDetail"
+                  value={customerInfo.addressDetail}
+                  onChange={handleInputChange}
+                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                  placeholder="Masukkan detail alamat (RT/RW, nama gang, warna pagar, dll)"
+                  rows={3}
+                  required
+                />
               </div>
               
               <div className="mb-4">
@@ -182,7 +210,7 @@ const CartPage: React.FC = () => {
 
             {merchantsWithItems.map(merchant => {
               const items = getMerchantItems(merchant.id);
-              const subtotal = getMerchantTotal(merchant.id);
+              const merchantSubtotal = getMerchantTotal(merchant.id);
 
               return (
                 <div key={merchant.id} className="bg-white rounded-lg shadow-md p-4 mb-6">
@@ -208,11 +236,7 @@ const CartPage: React.FC = () => {
                   <div className="mt-4 pt-4 border-t">
                     <div className="flex justify-between mb-2">
                       <span>Subtotal</span>
-                      <span className="font-bold">{formatCurrency(subtotal)}</span>
-                    </div>
-                    <div className="flex justify-between mb-2">
-                      <span>Ongkir</span>
-                      <span className="font-bold">{formatCurrency(merchant.delivery_fee)}</span>
+                      <span className="font-bold">{formatCurrency(merchantSubtotal)}</span>
                     </div>
                   </div>
                 </div>
@@ -225,7 +249,19 @@ const CartPage: React.FC = () => {
       {!cartEmpty && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4">
           <div className="container mx-auto max-w-md">
-            <div className="flex justify-between items-center mb-2">
+            <div className="flex justify-between items-center mb-4">
+              <div className="text-sm">
+                <div className="flex justify-between mb-1">
+                  <span>Subtotal</span>
+                  <span>{formatCurrency(subtotal)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Ongkir</span>
+                  <span>{formatCurrency(DELIVERY_FEE)}</span>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-between items-center">
               <div>
                 <span className="text-gray-600">Total Pesanan:</span>
                 <div className="font-bold text-lg">{formatCurrency(totalAmount)}</div>
@@ -240,12 +276,6 @@ const CartPage: React.FC = () => {
           </div>
         </div>
       )}
-
-      <MapModal 
-        isOpen={isMapModalOpen}
-        onClose={() => setIsMapModalOpen(false)}
-        onSelectLocation={handleSelectLocation}
-      />
     </div>
   );
 };

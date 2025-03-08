@@ -12,7 +12,7 @@ const HomePage: React.FC = () => {
       
       <main className="container mx-auto px-4 py-6">
         <div className="bg-orange-100 rounded-lg p-4 mb-6 flex items-center">
-          <Store size={24} className="text-orange-500 mr-3" />
+          <Store size={26} className="text-orange-500 mr-3" />
           <div>
             <h2 className="font-bold text-lg">Pesan Makanan Online</h2>
             <p className="text-sm text-gray-600">

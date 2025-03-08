@@ -57,22 +57,22 @@ const MenuItem: React.FC<MenuItemProps> = ({ item, merchantId }) => {
               }`}
               disabled={quantity === 0}
             >
-              <Minus size={16} />
+              <Minus size={14} />
             </button>
             <span className="mx-2 w-6 text-center">{quantity}</span>
             <button
               onClick={handleIncrement}
               className="w-6 h-6 flex items-center justify-center rounded-full bg-orange-500 text-white"
             >
-              <Plus size={16} />
+              <Plus size={14} />
             </button>
           </div>
         </div>
-        {quantity > 0 && (
+        {/* {quantity > 0 && (
           <div className="mt-2 text-sm text-gray-700">
             Subtotal: {formatCurrency(item.price * quantity)}
           </div>
-        )}
+        )} */}
       </div>
     </div>
   );

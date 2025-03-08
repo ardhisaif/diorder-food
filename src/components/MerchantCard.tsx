@@ -8,17 +8,9 @@ interface MerchantCardProps {
 }
 
 const MerchantCard: React.FC<MerchantCardProps> = ({ merchant }) => {
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
-
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden mb-4">
-      <div className="flex p-4">
+      <div className="flex p-3">
         <img
           src={merchant.logo}
           alt={merchant.name}
@@ -30,14 +22,11 @@ const MerchantCard: React.FC<MerchantCardProps> = ({ merchant }) => {
             <MapPin size={14} className="mr-1" />
             <span>{merchant.address}</span>
           </div>
-          <div className="text-sm text-gray-600 mt-1">
-            Ongkir: {formatCurrency(merchant.delivery_fee)}
-          </div>
         </div>
       </div>
       <Link
         to={`/menu/${merchant.id}`}
-        className="block bg-orange-500 text-white py-2 px-4 text-center font-medium flex items-center justify-center"
+        className=" bg-orange-500 text-white py-2 px-4 text-center font-medium flex items-center justify-center"
       >
         Lihat Menu <ChevronRight size={16} className="ml-1" />
       </Link>

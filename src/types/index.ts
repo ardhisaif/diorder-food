@@ -3,7 +3,8 @@ export interface Merchant {
   name: string;
   address: string;
   logo: string;
-  delivery_fee: number;
+  // delivery_fee: number;
+  // whatsapp: string;
 }
 
 export interface MenuItem {
@@ -21,6 +22,7 @@ export interface CartItem extends MenuItem {
 
 export interface CustomerInfo {
   name: string;
-  address: string;
+  village: string;
+  addressDetail: string;
   notes: string;
 }

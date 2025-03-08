@@ -153,7 +153,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return merchant ? {
       name: merchant.name,
       delivery_fee: merchant.delivery_fee,
-      whatsapp: "082217012023"
+      whatsapp: merchant.whatsapp
     } : null;
   };
 
