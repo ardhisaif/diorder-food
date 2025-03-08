@@ -6,7 +6,7 @@ import Header from '../components/Header';
 import merchantsData from '../data/merchants.json';
 import { ShoppingBag, Plus } from 'lucide-react';
 
-const WHATSAPP_NUMBER = '082217012023';
+const WHATSAPP_NUMBER = '6282217012023';
 const DELIVERY_FEE = 5000;
 const VILLAGES = [
   'Duduksampeyan',
