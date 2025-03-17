@@ -1,14 +1,16 @@
 import React from 'react';
-import { MenuItem as MenuItemType } from '../types';
+import { MenuItem } from '../types';
+import { Plus, Minus, Info } from 'lucide-react';
 import { useCart } from '../context/CartContext';
-import { Plus, Minus } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
-interface MenuItemProps {
-  item: MenuItemType;
+interface ProductCardProps {
+  item: MenuItem;
   merchantId: number;
+  merchantName: string;
 }
 
-const MenuItem: React.FC<MenuItemProps> = ({ item, merchantId }) => {
+const ProductCard: React.FC<ProductCardProps> = ({ item, merchantId, merchantName }) => {
   const { addToCart, removeFromCart, getItemQuantity } = useCart();
   const quantity = getItemQuantity(item.id);
 
@@ -21,7 +23,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ item, merchantId }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden mb-4">
+    <div className="bg-white rounded-lg shadow-md overflow-hidden">
       <div className="flex">
         <img
           src={item.image}
@@ -30,27 +32,29 @@ const MenuItem: React.FC<MenuItemProps> = ({ item, merchantId }) => {
         />
         <div className="p-3 flex-1">
           <h3 className="font-bold">{item.name}</h3>
+          <Link to={`/menu/${merchantId}`} className="text-sm text-blue-500 flex items-center">
+            <Info size={14} className="mr-1" />
+            {merchantName}
+          </Link>
           <div className="flex justify-between items-center mt-2">
             <span className="font-bold text-orange-500">{formatCurrency(item.price)}</span>
             <div className="flex items-center">
-
+              {quantity > 0 ? (
                 <>
                   <button
                     onClick={() => removeFromCart(item.id, merchantId)}
-                    className={`w-6 h-6 flex items-center justify-center rounded-full ${
-                      quantity > 0 ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-400'
-                    }`}
+                    className="w-8 h-8 flex items-center justify-center bg-gray-200 rounded-full"
                   >
-                    <Minus size={14} />
+                    <Minus size={16} />
                   </button>
                   <span className="mx-2 font-medium">{quantity}</span>
                 </>
-
+              ) : null}
               <button
                 onClick={() => addToCart(item, merchantId)}
-                className="w-6 h-6 flex items-center justify-center bg-orange-500 text-white rounded-full"
+                className="w-8 h-8 flex items-center justify-center bg-orange-500 text-white rounded-full"
               >
-                <Plus size={14} />
+                <Plus size={16} />
               </button>
             </div>
           </div>
@@ -60,4 +64,4 @@ const MenuItem: React.FC<MenuItemProps> = ({ item, merchantId }) => {
   );
 };
 
-export default MenuItem;
+export default ProductCard;

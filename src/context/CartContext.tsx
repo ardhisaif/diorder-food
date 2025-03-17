@@ -15,7 +15,8 @@ interface CartContextType {
   getMerchantTotal: (merchantId: number) => number;
   getItemCount: () => number;
   getMerchantItems: (merchantId: number) => CartItem[];
-  getMerchantInfo: (merchantId: number) => { name: string; delivery_fee: number; whatsapp: string } | null;
+  getMerchantInfo: (merchantId: number) => { name: string; delivery_fee: number } | null;
+  getItemQuantity: (itemId: number) => number;
 }
 
 interface CartState {
@@ -35,8 +36,16 @@ const getInitialState = (): CartState => {
     customerInfo: { name: '', address: '', notes: '' }
   };
 
-  const savedState = localStorage.getItem(CART_STORAGE_KEY);
-  return savedState ? JSON.parse(savedState) : {
+  try {
+    const savedState = localStorage.getItem(CART_STORAGE_KEY);
+    if (savedState) {
+      return JSON.parse(savedState);
+    }
+  } catch (error) {
+    console.error('Error parsing cart state from localStorage:', error);
+  }
+  
+  return {
     items: {},
     customerInfo: { name: '', address: '', notes: '' }
   };
@@ -46,7 +55,11 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [state, setState] = useState<CartState>(getInitialState);
 
   useEffect(() => {
-    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(state));
+    try {
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(state));
+    } catch (error) {
+      console.error('Error saving cart state to localStorage:', error);
+    }
   }, [state]);
 
   const addToCart = (item: MenuItem, merchantId: number) => {
@@ -73,30 +86,68 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const removeFromCart = (itemId: number, merchantId: number) => {
-    setState(prevState => ({
-      ...prevState,
-      items: {
-        ...prevState.items,
-        [merchantId]: (prevState.items[merchantId] || []).filter(item => item.id !== itemId)
+    setState(prevState => {
+      const merchantItems = prevState.items[merchantId] || [];
+      const existingItem = merchantItems.find(cartItem => cartItem.id === itemId);
+      
+      if (!existingItem) return prevState;
+      
+      let updatedMerchantItems;
+      
+      if (existingItem.quantity > 1) {
+        // Decrease quantity if more than 1
+        updatedMerchantItems = merchantItems.map(cartItem =>
+          cartItem.id === itemId
+            ? { ...cartItem, quantity: cartItem.quantity - 1 }
+            : cartItem
+        );
+      } else {
+        // Remove item if quantity is 1
+        updatedMerchantItems = merchantItems.filter(cartItem => cartItem.id !== itemId);
       }
-    }));
+      
+      return {
+        ...prevState,
+        items: {
+          ...prevState.items,
+          [merchantId]: updatedMerchantItems
+        }
+      };
+    });
   };
 
   const updateQuantity = (itemId: number, quantity: number, merchantId: number) => {
     if (quantity <= 0) {
-      removeFromCart(itemId, merchantId);
+      // Remove item completely if quantity is 0 or negative
+      setState(prevState => {
+        const merchantItems = prevState.items[merchantId] || [];
+        const updatedMerchantItems = merchantItems.filter(item => item.id !== itemId);
+        
+        return {
+          ...prevState,
+          items: {
+            ...prevState.items,
+            [merchantId]: updatedMerchantItems
+          }
+        };
+      });
       return;
     }
 
-    setState(prevState => ({
-      ...prevState,
-      items: {
-        ...prevState.items,
-        [merchantId]: (prevState.items[merchantId] || []).map(item =>
-          item.id === itemId ? { ...item, quantity } : item
-        )
-      }
-    }));
+    setState(prevState => {
+      const merchantItems = prevState.items[merchantId] || [];
+      const updatedMerchantItems = merchantItems.map(item =>
+        item.id === itemId ? { ...item, quantity } : item
+      );
+      
+      return {
+        ...prevState,
+        items: {
+          ...prevState.items,
+          [merchantId]: updatedMerchantItems
+        }
+      };
+    });
   };
 
   const clearCart = () => {
@@ -108,6 +159,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const clearMerchantCart = (merchantId: number) => {
     setState(prevState => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { [merchantId]: _, ...remainingItems } = prevState.items;
       return {
         ...prevState,
@@ -152,9 +204,19 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const merchant = merchantsData.find(m => m.id === merchantId);
     return merchant ? {
       name: merchant.name,
-      delivery_fee: merchant.delivery_fee,
-      whatsapp: merchant.whatsapp
+      delivery_fee: merchant.delivery_fee || 0
     } : null;
+  };
+
+  const getItemQuantity = (itemId: number) => {
+    // Check all merchants for the item
+    for (const merchantItems of Object.values(state.items)) {
+      const item = merchantItems.find(item => item.id === itemId);
+      if (item) {
+        return item.quantity;
+      }
+    }
+    return 0;
   };
 
   return (
@@ -172,7 +234,8 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         getMerchantTotal,
         getItemCount,
         getMerchantItems,
-        getMerchantInfo
+        getMerchantInfo,
+        getItemQuantity,
       }}
     >
       {children}
@@ -180,6 +243,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useCart = () => {
   const context = useContext(CartContext);
   if (context === undefined) {

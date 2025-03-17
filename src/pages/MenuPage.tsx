@@ -12,7 +12,7 @@ const MenuPage: React.FC = () => {
   const { merchantId } = useParams<{ merchantId: string }>();
   const [merchant, setMerchant] = useState<Merchant | null>(null);
   const [menuItems, setMenuItems] = useState<MenuItemType[]>([]);
-  const { getMerchantTotal, getMerchantItems, getCartTotal } = useCart();
+  const { getMerchantItems, getCartTotal } = useCart();
   const navigate = useNavigate();
   
   useEffect(() => {

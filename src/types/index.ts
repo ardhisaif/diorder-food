@@ -22,7 +22,9 @@ export interface CartItem extends MenuItem {
 
 export interface CustomerInfo {
   name: string;
-  village: string;
-  addressDetail: string;
+  address: string;
   notes: string;
+  phone?: string;
+  village?: string;
+  addressDetail?: string;
 }
