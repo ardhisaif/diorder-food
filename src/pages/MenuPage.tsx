@@ -89,11 +89,11 @@ const MenuPage: React.FC = () => {
               {isOpen ? "Buka" : "Tutup"} • {merchant.openingHours.open} - {merchant.openingHours.close}
             </span>
           </div>
-          {!isOpen && (
+          {/* {!isOpen && (
             <div className="mt-2 p-2 bg-red-100 rounded-md text-red-800 text-sm">
               Merchant saat ini tutup. Anda dapat melihat menu, tetapi tidak dapat melakukan pemesanan.
             </div>
-          )}
+          )} */}
         </div>
         
         {Object.entries(menuByCategory).map(([category, items]) => (
