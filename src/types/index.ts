@@ -3,8 +3,10 @@ export interface Merchant {
   name: string;
   address: string;
   logo: string;
-  // delivery_fee: number;
-  // whatsapp: string;
+  openingHours: {
+    open: string;
+    close: string;
+  };
 }
 
 export interface MenuItem {
