@@ -15,7 +15,7 @@ const HomePage: React.FC = () => {
   const [filteredProducts, setFilteredProducts] = useState<MenuItem[]>([]);
   const [showingSearchResults, setShowingSearchResults] =
     useState<boolean>(false);
-  const { getMerchantItems, getCartTotal } = useCart();
+  const { getMerchantItems, getSubtotal } = useCart();
   const navigate = useNavigate();
 
   const totalItems = merchants.reduce((sum, merchant) => {
@@ -23,7 +23,7 @@ const HomePage: React.FC = () => {
     return sum + items.reduce((itemSum, item) => itemSum + item.quantity, 0);
   }, 0);
 
-  const totalAmount = getCartTotal();
+  const totalAmount = getSubtotal();
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
@@ -61,7 +61,7 @@ const HomePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 pb-24">
-      <Header title="Diorder" />
+      <Header title="Diorderin" />
       <main className="container mx-auto px-4 py-6">
         <SearchBar onSearch={handleSearch} />
 

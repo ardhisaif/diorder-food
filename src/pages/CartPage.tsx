@@ -1,44 +1,44 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useCart } from '../context/CartContext';
-import CartItem from '../components/CartItem';
-import Header from '../components/Header';
-import merchantsData from '../data/merchants.json';
-import { ShoppingBag, Plus } from 'lucide-react';
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import { useCart } from "../context/CartContext";
+import CartItem from "../components/CartItem";
+import Header from "../components/Header";
+import merchantsData from "../data/merchants.json";
+import { ShoppingBag, Plus } from "lucide-react";
+import { isCurrentlyOpen } from "../utils/merchantUtils";
 
-const WHATSAPP_NUMBER = '6282217012023';
+const WHATSAPP_NUMBER = "6282217012023";
 const DELIVERY_FEE = 5000;
-const VILLAGES = [
-  'Duduksampeyan',
-  'Sumengko',
-  'Petisbenem',
-  'Setrohadi'
-];
+const VILLAGES = ["Duduksampeyan", "Sumengko", "Petisbenem", "Setrohadi"];
 
 const CartPage: React.FC = () => {
-  const { 
+  const {
     getMerchantItems,
     getMerchantTotal,
     customerInfo,
     updateCustomerInfo,
-    clearCart
+    clearCart,
   } = useCart();
   const navigate = useNavigate();
 
   // Get all merchants that have items in the cart
-  const merchantsWithItems = merchantsData.filter(m => 
-    getMerchantItems(m.id).length > 0
+  const merchantsWithItems = merchantsData.filter(
+    (m) => getMerchantItems(m.id).length > 0
   );
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
       minimumFractionDigits: 0,
     }).format(amount);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
     const { name, value } = e.target;
     updateCustomerInfo({
       ...customerInfo,
@@ -47,76 +47,95 @@ const CartPage: React.FC = () => {
   };
 
   const handleCheckout = () => {
-    if (!customerInfo.name || !customerInfo.village || !customerInfo.addressDetail) {
-      alert('Mohon lengkapi data pengiriman');
+    if (
+      !customerInfo.name ||
+      !customerInfo.village ||
+      !customerInfo.addressDetail
+    ) {
+      alert("Mohon lengkapi data pengiriman");
       return;
     }
 
     const subtotal = merchantsWithItems.reduce((total, merchant) => {
-      return total + getMerchantTotal(merchant.id);
+      if (isCurrentlyOpen(merchant.openingHours)) {
+        return total + getMerchantTotal(merchant.id);
+      }
+      return total;
     }, 0);
-    
+
     const totalWithDelivery = subtotal + DELIVERY_FEE;
 
     // Format the order message for WhatsApp
-    let message = `*Pesanan Baru dari DiOrder*\n\n`;
+    let message = `*Pesanan Baru dari Diorderin*\n\n`;
     message += `*Nama*: ${customerInfo.name}\n`;
     message += `*Alamat*:\n`;
     message += `Kecamatan: Duduksampeyan\n`;
     message += `Desa: ${customerInfo.village}\n`;
     message += `Detail Alamat: ${customerInfo.addressDetail}\n\n`;
-    
+
     // Add orders from each merchant
-    merchantsWithItems.forEach(merchant => {
-      const items = getMerchantItems(merchant.id);
-      const merchantSubtotal = getMerchantTotal(merchant.id);
-      
-      message += `*Detail Pesanan dari ${merchant.name}*:\n`;
-      items.forEach((item) => {
-        message += `- ${item.name} (${item.quantity}x) = ${formatCurrency(item.price * item.quantity)}\n`;
-      });
-      message += `Subtotal: ${formatCurrency(merchantSubtotal)}\n\n`;
+    merchantsWithItems.forEach((merchant) => {
+      if (isCurrentlyOpen(merchant.openingHours)) {
+        const items = getMerchantItems(merchant.id);
+        const merchantSubtotal = getMerchantTotal(merchant.id);
+
+        message += `*Detail Pesanan dari ${merchant.name}*:\n`;
+        items.forEach((item) => {
+          message += `- ${item.name} (${item.quantity}x) = ${formatCurrency(
+            item.price * item.quantity
+          )}\n`;
+        });
+        message += `Subtotal: ${formatCurrency(merchantSubtotal)}\n\n`;
+      }
     });
-    
+
     message += `Subtotal Pesanan: ${formatCurrency(subtotal)}\n`;
     message += `Ongkir: ${formatCurrency(DELIVERY_FEE)}\n`;
     message += `*Total Keseluruhan*: ${formatCurrency(totalWithDelivery)}\n\n`;
-    
+
     if (customerInfo.notes) {
       message += `*Catatan*: ${customerInfo.notes}\n\n`;
     }
-    
+
     message += `Terima kasih telah memesan!`;
-    
+
     // Encode the message for the URL
     const encodedMessage = encodeURIComponent(message);
-    
+
     // Open WhatsApp with the formatted message
-    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMessage}`, '_blank');
-    
+    window.open(
+      `https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMessage}`,
+      "_blank"
+    );
+
     // Clear the entire cart after checkout
     clearCart();
-    navigate('/');
+    navigate("/");
   };
 
   const cartEmpty = merchantsWithItems.length === 0;
   const subtotal = merchantsWithItems.reduce((total, merchant) => {
-    return total + getMerchantTotal(merchant.id);
+    if (isCurrentlyOpen(merchant.openingHours)) {
+      return total + getMerchantTotal(merchant.id);
+    }
+    return total;
   }, 0);
   const totalAmount = subtotal + DELIVERY_FEE;
 
   return (
     <div className="min-h-screen bg-gray-100 pb-32">
       <Header title="Keranjang" showBack />
-      
+
       <div className="container mx-auto px-4 py-6">
         {cartEmpty ? (
           <div className="bg-white rounded-lg shadow-md p-8 text-center">
             <ShoppingBag size={48} className="mx-auto text-gray-400 mb-4" />
             <h2 className="text-xl font-bold mb-2">Keranjang Kosong</h2>
-            <p className="text-gray-600 mb-4">Anda belum menambahkan item ke keranjang</p>
+            <p className="text-gray-600 mb-4">
+              Anda belum menambahkan item ke keranjang
+            </p>
             <button
-              onClick={() => navigate('/')}
+              onClick={() => navigate("/")}
               className="bg-orange-500 text-white py-2 px-4 rounded-lg font-medium"
             >
               Lihat Merchant
@@ -126,9 +145,12 @@ const CartPage: React.FC = () => {
           <>
             <div className="bg-white rounded-lg shadow-md p-4 mb-6">
               <h2 className="font-bold text-lg mb-4">Informasi Pengiriman</h2>
-              
+
               <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="name">
+                <label
+                  className="block text-gray-700 text-sm font-bold mb-2"
+                  htmlFor="name"
+                >
                   Nama Pemesan
                 </label>
                 <input
@@ -142,7 +164,7 @@ const CartPage: React.FC = () => {
                   required
                 />
               </div>
-              
+
               <div className="mb-4">
                 <label className="block text-gray-700 text-sm font-bold mb-2">
                   Kecamatan
@@ -156,7 +178,10 @@ const CartPage: React.FC = () => {
               </div>
 
               <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="village">
+                <label
+                  className="block text-gray-700 text-sm font-bold mb-2"
+                  htmlFor="village"
+                >
                   Desa
                 </label>
                 <select
@@ -168,16 +193,19 @@ const CartPage: React.FC = () => {
                   required
                 >
                   <option value="">Pilih Desa</option>
-                  {VILLAGES.map(village => (
+                  {VILLAGES.map((village) => (
                     <option key={village} value={village}>
                       {village}
                     </option>
                   ))}
                 </select>
               </div>
-              
+
               <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="addressDetail">
+                <label
+                  className="block text-gray-700 text-sm font-bold mb-2"
+                  htmlFor="addressDetail"
+                >
                   Detail Alamat
                 </label>
                 <textarea
@@ -191,9 +219,12 @@ const CartPage: React.FC = () => {
                   required
                 />
               </div>
-              
+
               <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="notes">
+                <label
+                  className="block text-gray-700 text-sm font-bold mb-2"
+                  htmlFor="notes"
+                >
                   Catatan Tambahan
                 </label>
                 <textarea
@@ -208,12 +239,18 @@ const CartPage: React.FC = () => {
               </div>
             </div>
 
-            {merchantsWithItems.map(merchant => {
+            {merchantsWithItems.map((merchant) => {
               const items = getMerchantItems(merchant.id);
               const merchantSubtotal = getMerchantTotal(merchant.id);
+              const isOpen = isCurrentlyOpen(merchant.openingHours);
 
               return (
-                <div key={merchant.id} className="bg-white rounded-lg shadow-md p-4 mb-6">
+                <div
+                  key={merchant.id}
+                  className={`bg-white rounded-lg shadow-md p-4 mb-6 ${
+                    isOpen ? "" : "filter grayscale"
+                  }`}
+                >
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="font-bold text-lg">{merchant.name}</h2>
                     <button
@@ -224,19 +261,21 @@ const CartPage: React.FC = () => {
                       Tambah Menu
                     </button>
                   </div>
-                  
+
                   {items.map((item) => (
-                    <CartItem 
-                      key={item.id} 
+                    <CartItem
+                      key={item.id}
                       item={item}
                       merchantId={merchant.id}
                     />
                   ))}
-                  
+
                   <div className="mt-4 pt-4 border-t">
                     <div className="flex justify-between mb-2">
                       <span>Subtotal</span>
-                      <span className="font-bold">{formatCurrency(merchantSubtotal)}</span>
+                      <span className="font-bold">
+                        {formatCurrency(merchantSubtotal)}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -253,18 +292,20 @@ const CartPage: React.FC = () => {
               <div className="text-sm">
                 <div className="flex justify-between mb-1">
                   <span>Subtotal</span>
-                  <span>{formatCurrency(subtotal)}</span>
+                    <span className="pl-2">{formatCurrency(subtotal)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Ongkir</span>
-                  <span>{formatCurrency(DELIVERY_FEE)}</span>
+                  <span className="pl-2">{formatCurrency(DELIVERY_FEE)}</span>
                 </div>
               </div>
             </div>
             <div className="flex justify-between items-center">
               <div>
                 <span className="text-gray-600">Total Pesanan:</span>
-                <div className="font-bold text-lg">{formatCurrency(totalAmount)}</div>
+                <div className="font-bold text-lg">
+                  {formatCurrency(totalAmount)}
+                </div>
               </div>
               <button
                 onClick={handleCheckout}

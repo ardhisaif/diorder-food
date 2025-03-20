@@ -73,7 +73,7 @@ const MenuPage: React.FC = () => {
   };
 
   return (
-    <div className={`min-h-screen bg-gray-100 pb-32 ${!isOpen ? 'grayscale' : ''}`}>
+    <div className="min-h-screen bg-gray-100 pb-32">
       <Header 
         title={merchant.name} 
         showBack
