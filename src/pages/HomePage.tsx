@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { Merchant, MenuItem } from "../types";
 import MerchantCard from "../components/MerchantCard";
 import Header from "../components/Header";
@@ -10,26 +10,36 @@ import { Store, ShoppingBag } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { useNavigate } from "react-router-dom";
 
+// Fungsi untuk format mata uang, dipindahkan ke luar agar tidak dideklarasikan ulang
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0,
+  }).format(amount);
+};
+
 const HomePage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [filteredProducts, setFilteredProducts] = useState<MenuItem[]>([]);
-  const [showingSearchResults, setShowingSearchResults] =
-    useState<boolean>(false);
   const { getMerchantItems, getSubtotal } = useCart();
   const navigate = useNavigate();
 
-  const totalItems = merchants.reduce((sum, merchant) => {
-    const items = getMerchantItems(merchant.id);
-    return sum + items.reduce((itemSum, item) => itemSum + item.quantity, 0);
-  }, 0);
+  // Menggunakan useMemo agar total items tidak dihitung ulang pada setiap render
+  const totalItems = useMemo(() => {
+    return merchants.reduce((sum, merchant) => {
+      const items = getMerchantItems(merchant.id);
+      return sum + items.reduce((itemSum, item) => itemSum + item.quantity, 0);
+    }, 0);
+  }, [getMerchantItems]);
 
-  const totalAmount = getSubtotal();
+  const totalAmount = useMemo(() => getSubtotal(), [getSubtotal]);
 
-  const handleSearch = (query: string) => {
+  // Callback untuk menangani pencarian, memastikan fungsi tidak berubah di setiap render
+  const handleSearch = useCallback((query: string) => {
     setSearchQuery(query);
 
-    if (query.trim() === "") {
-      setShowingSearchResults(false);
+    if (!query.trim()) {
       setFilteredProducts([]);
       return;
     }
@@ -42,22 +52,16 @@ const HomePage: React.FC = () => {
     );
 
     setFilteredProducts(results);
-    setShowingSearchResults(true);
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
+  }, []);
 
   // Find merchant name by id
-  const getMerchantName = (merchantId: number): string => {
-    const merchant = merchants.find((m) => m.id === merchantId);
-    return merchant ? merchant.name : "";
-  };
+  const getMerchantName = useCallback(
+    (merchantId: number): string => {
+      const merchant = merchants.find((m) => m.id === merchantId);
+      return merchant ? merchant.name : "";
+    },
+    []
+  );
 
   return (
     <div className="min-h-screen bg-gray-100 pb-24">
@@ -65,7 +69,7 @@ const HomePage: React.FC = () => {
       <main className="container mx-auto px-4 py-6">
         <SearchBar onSearch={handleSearch} />
 
-        {!showingSearchResults && (
+        {filteredProducts.length === 0 ? (
           <>
             <div className="bg-orange-100 rounded-lg p-4 mb-6 flex items-center">
               <Store size={26} className="text-orange-500 mr-3" />
@@ -83,9 +87,7 @@ const HomePage: React.FC = () => {
               ))}
             </div>
           </>
-        )}
-
-        {showingSearchResults && (
+        ) : (
           <>
             <h2 className="text-xl font-bold mb-4">
               Hasil Pencarian: "{searchQuery}"
