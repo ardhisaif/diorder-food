@@ -2,8 +2,8 @@
   {
     "id": 1,
     "name": "Mi Netijen",
-    "address": "Jl. Contoh No. 123",
-    "logo": "https://images.unsplash.com/photo-1555126634-323283e090fa?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=150&h=150&q=80",
+    "address": "Dsn. Duduk rt 8b rw 05",
+    "logo": "/images/mi_pedes_level_1.jpg",
     "delivery_fee": 10000,
     "openingHours": {
       "open": "08:00",

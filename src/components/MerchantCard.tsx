@@ -17,7 +17,7 @@ const MerchantCard: React.FC<MerchantCardProps> = ({ merchant }) => {
         <img
           src={merchant.logo}
           alt={merchant.name}
-          className={`w-16 h-16 rounded-lg object-cover ${!isOpen ? 'grayscale' : ''}`}
+          className={`w-20 h-20 rounded-lg object-cover ${!isOpen ? 'grayscale' : ''}`}
         />
         <div className="ml-4 flex-1">
           <h3 className="font-bold text-lg">{merchant.name}</h3>
