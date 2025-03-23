@@ -62,7 +62,7 @@ const CartItem: React.FC<CartItemProps> = ({ item, merchantId }) => {
         <textarea
           value={item.notes}
           onChange={handleNotesChange}
-          className="mt-2 w-full p-2 border rounded-md"
+          className="mt-2 w-full p-2 border rounded-md focus:outline-none"
           placeholder="Catatan tambahan untuk produk ini"
         />
       </div>
