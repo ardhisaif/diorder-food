@@ -18,6 +18,7 @@ interface CartContextType {
     quantity: number,
     merchantId: number
   ) => void;
+  updateItemNotes: (itemId: number, notes: string, merchantId: number) => void;
   clearCart: () => void;
   clearMerchantCart: (merchantId: number) => void;
   customerInfo: CustomerInfo;
@@ -92,7 +93,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
               ? { ...cartItem, quantity: cartItem.quantity + 1 }
               : cartItem
           )
-        : [...merchantItems, { ...item, quantity: 1 }];
+        : [...merchantItems, { ...item, quantity: 1, notes: "" }];
 
       return {
         ...prevState,
@@ -113,21 +114,14 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
 
       if (!existingItem) return prevState;
 
-      let updatedMerchantItems;
-
-      if (existingItem.quantity > 1) {
-        // Decrease quantity if more than 1
-        updatedMerchantItems = merchantItems.map((cartItem) =>
-          cartItem.id === itemId
-            ? { ...cartItem, quantity: cartItem.quantity - 1 }
-            : cartItem
-        );
-      } else {
-        // Remove item if quantity is 1
-        updatedMerchantItems = merchantItems.filter(
-          (cartItem) => cartItem.id !== itemId
-        );
-      }
+      const updatedMerchantItems =
+        existingItem.quantity > 1
+          ? merchantItems.map((cartItem) =>
+              cartItem.id === itemId
+                ? { ...cartItem, quantity: cartItem.quantity - 1 }
+                : cartItem
+            )
+          : merchantItems.filter((cartItem) => cartItem.id !== itemId);
 
       return {
         ...prevState,
@@ -145,21 +139,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
     merchantId: number
   ) => {
     if (quantity <= 0) {
-      // Remove item completely if quantity is 0 or negative
-      setState((prevState) => {
-        const merchantItems = prevState.items[merchantId] || [];
-        const updatedMerchantItems = merchantItems.filter(
-          (item) => item.id !== itemId
-        );
-
-        return {
-          ...prevState,
-          items: {
-            ...prevState.items,
-            [merchantId]: updatedMerchantItems,
-          },
-        };
-      });
+      removeFromCart(itemId, merchantId);
       return;
     }
 
@@ -167,6 +147,27 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
       const merchantItems = prevState.items[merchantId] || [];
       const updatedMerchantItems = merchantItems.map((item) =>
         item.id === itemId ? { ...item, quantity } : item
+      );
+
+      return {
+        ...prevState,
+        items: {
+          ...prevState.items,
+          [merchantId]: updatedMerchantItems,
+        },
+      };
+    });
+  };
+
+  const updateItemNotes = (
+    itemId: number,
+    notes: string,
+    merchantId: number
+  ) => {
+    setState((prevState) => {
+      const merchantItems = prevState.items[merchantId] || [];
+      const updatedMerchantItems = merchantItems.map((item) =>
+        item.id === itemId ? { ...item, notes } : item
       );
 
       return {
@@ -246,7 +247,6 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   const getItemQuantity = (itemId: number) => {
-    // Check all merchants for the item
     for (const merchantItems of Object.values(state.items)) {
       const item = merchantItems.find((item) => item.id === itemId);
       if (item) {
@@ -273,6 +273,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
         addToCart,
         removeFromCart,
         updateQuantity,
+        updateItemNotes,
         clearCart,
         clearMerchantCart,
         customerInfo: state.customerInfo,

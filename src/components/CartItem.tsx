@@ -1,7 +1,7 @@
-import React from 'react';
-import { CartItem as CartItemType } from '../types';
-import { useCart } from '../context/CartContext';
-import { Plus, Minus } from 'lucide-react';
+import React from "react";
+import { CartItem as CartItemType } from "../types";
+import { useCart } from "../context/CartContext";
+import { Plus, Minus } from "lucide-react";
 
 interface CartItemProps {
   item: CartItemType;
@@ -9,14 +9,18 @@ interface CartItemProps {
 }
 
 const CartItem: React.FC<CartItemProps> = ({ item, merchantId }) => {
-  const { updateQuantity } = useCart();
+  const { updateQuantity, updateItemNotes } = useCart();
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
       minimumFractionDigits: 0,
     }).format(amount);
+  };
+
+  const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    updateItemNotes(item.id, e.target.value, merchantId);
   };
 
   return (
@@ -34,14 +38,18 @@ const CartItem: React.FC<CartItemProps> = ({ item, merchantId }) => {
           </div>
           <div className="flex items-center">
             <button
-              onClick={() => updateQuantity(item.id, item.quantity - 1, merchantId)}
+              onClick={() =>
+                updateQuantity(item.id, item.quantity - 1, merchantId)
+              }
               className="w-6 h-6 flex items-center justify-center rounded-full bg-orange-500 text-white"
             >
               <Minus size={14} />
             </button>
             <span className="mx-2 w-6 text-center">{item.quantity}</span>
             <button
-              onClick={() => updateQuantity(item.id, item.quantity + 1, merchantId)}
+              onClick={() =>
+                updateQuantity(item.id, item.quantity + 1, merchantId)
+              }
               className="w-6 h-6 flex items-center justify-center rounded-full bg-orange-500 text-white"
             >
               <Plus size={14} />
@@ -51,9 +59,15 @@ const CartItem: React.FC<CartItemProps> = ({ item, merchantId }) => {
         <div className="mt-1 text-sm text-gray-700">
           Subtotal: {formatCurrency(item.price * item.quantity)}
         </div>
+        <textarea
+          value={item.notes}
+          onChange={handleNotesChange}
+          className="mt-2 w-full p-2 border rounded-md"
+          placeholder="Catatan tambahan untuk produk ini"
+        />
       </div>
     </div>
   );
 };
 
-export default CartItem
+export default CartItem;

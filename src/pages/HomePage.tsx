@@ -71,7 +71,7 @@ const HomePage: React.FC = () => {
 
         {filteredProducts.length === 0 ? (
           <>
-            <div className="bg-orange-100 rounded-lg p-4 mb-6 flex items-center">
+            {/* <div className="bg-orange-100 rounded-lg p-4 mb-6 flex items-center">
               <Store size={26} className="text-orange-500 mr-3" />
               <div>
                 <h2 className="font-bold text-lg">Pesan Makanan Online</h2>
@@ -79,7 +79,7 @@ const HomePage: React.FC = () => {
                   Pilih merchant favorit dan pesan langsung via WhatsApp
                 </p>
               </div>
-            </div>
+            </div> */}
             <h2 className="text-xl font-bold mb-4">Daftar Merchant</h2>
             <div className="grid gap-4">
               {merchants.map((merchant: Merchant) => (

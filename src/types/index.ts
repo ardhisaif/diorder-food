@@ -20,6 +20,7 @@ export interface MenuItem {
 
 export interface CartItem extends MenuItem {
   quantity: number;
+  notes?: string;
 }
 
 export interface CustomerInfo {
