@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { Merchant, MenuItem } from "../types";
 import MerchantCard from "../components/MerchantCard";
 import Header from "../components/Header";
@@ -9,6 +9,7 @@ import menuData from "../data/menu.json";
 import { ShoppingBag } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { useNavigate } from "react-router-dom";
+import { isCurrentlyOpen } from "../utils/merchantUtils";
 
 // Fungsi untuk format mata uang, dipindahkan ke luar agar tidak dideklarasikan ulang
 const formatCurrency = (amount: number) => {
@@ -21,7 +22,11 @@ const formatCurrency = (amount: number) => {
 
 const HomePage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [filteredProducts, setFilteredProducts] = useState<MenuItem[]>([]);
+  const [filteredProducts, setFilteredProducts] =
+    useState<MenuItem[]>(menuData);
+  const [activeTab, setActiveTab] = useState<"merchants" | "products">(
+    "merchants"
+  );
   const { getMerchantItems, getSubtotal } = useCart();
   const navigate = useNavigate();
 
@@ -40,7 +45,7 @@ const HomePage: React.FC = () => {
     setSearchQuery(query);
 
     if (!query.trim()) {
-      setFilteredProducts([]);
+      setFilteredProducts(menuData);
       return;
     }
 
@@ -55,50 +60,92 @@ const HomePage: React.FC = () => {
   }, []);
 
   // Find merchant name by id
-  const getMerchantName = useCallback(
-    (merchantId: number): string => {
-      const merchant = merchants.find((m) => m.id === merchantId);
-      return merchant ? merchant.name : "";
-    },
-    []
-  );
+  const getMerchantName = useCallback((merchantId: number): string => {
+    const merchant = merchants.find((m) => m.id === merchantId);
+    return merchant ? merchant.name : "";
+  }, []);
+
+  // Sort merchants by open status
+  const sortedMerchants = useMemo(() => {
+    return merchants.sort((a, b) => {
+      const isOpenA = isCurrentlyOpen(a.openingHours);
+      const isOpenB = isCurrentlyOpen(b.openingHours);
+      return isOpenA === isOpenB ? 0 : isOpenA ? -1 : 1;
+    });
+  }, []);
+
+  // Sort products by merchant open status
+  const sortedProducts = useMemo(() => {
+    return filteredProducts.sort((a, b) => {
+      const merchantA = merchants.find((m) => m.id === a.merchant_id);
+      const merchantB = merchants.find((m) => m.id === b.merchant_id);
+      const isOpenA = merchantA
+        ? isCurrentlyOpen(merchantA.openingHours)
+        : false;
+      const isOpenB = merchantB
+        ? isCurrentlyOpen(merchantB.openingHours)
+        : false;
+      return isOpenA === isOpenB ? 0 : isOpenA ? -1 : 1;
+    });
+  }, [filteredProducts]);
+
+  // Update filteredProducts when searchQuery changes
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredProducts(menuData);
+    }
+  }, [searchQuery]);
 
   return (
     <div className="min-h-screen bg-gray-100 pb-24">
       <Header title="Diorderin" />
       <main className="container mx-auto px-4 py-6">
-        <SearchBar onSearch={handleSearch} />
+        <div className="flex justify-center mb-4 space-x-4">
+          <button
+            className={`px-6 py-2 rounded-full font-semibold transition-colors ${
+              activeTab === "merchants"
+                ? "bg-orange-500 text-white"
+                : "bg-gray-200 text-gray-700"
+            }`}
+            onClick={() => setActiveTab("merchants")}
+          >
+            Merchants
+          </button>
+          <button
+            className={`px-6 py-2 rounded-full font-semibold transition-colors ${
+              activeTab === "products"
+                ? "bg-orange-500 text-white"
+                : "bg-gray-200 text-gray-700"
+            }`}
+            onClick={() => setActiveTab("products")}
+          >
+            Products
+          </button>
+        </div>
 
-        {filteredProducts.length === 0 ? (
+        {activeTab === "products" && <SearchBar onSearch={handleSearch} />}
+
+        {activeTab === "merchants" ? (
           <>
-            {/* <div className="bg-orange-100 rounded-lg p-4 mb-6 flex items-center">
-              <Store size={26} className="text-orange-500 mr-3" />
-              <div>
-                <h2 className="font-bold text-lg">Pesan Makanan Online</h2>
-                <p className="text-sm text-gray-600">
-                  Pilih merchant favorit dan pesan langsung via WhatsApp
-                </p>
-              </div>
-            </div> */}
             <h2 className="text-xl font-bold mb-4">Daftar Merchant</h2>
             <div className="grid gap-4">
-              {merchants.map((merchant: Merchant) => (
+              {sortedMerchants.map((merchant: Merchant) => (
                 <MerchantCard key={merchant.id} merchant={merchant} />
               ))}
             </div>
           </>
         ) : (
           <>
-            <h2 className="text-xl font-bold mb-4">
+            {/* <h2 className="text-xl font-bold mb-4">
               Hasil Pencarian: "{searchQuery}"
-            </h2>
-            {filteredProducts.length === 0 ? (
+            </h2> */}
+            {sortedProducts.length === 0 ? (
               <div className="text-center p-8 bg-white rounded-lg shadow-md">
                 <p>Tidak ada produk yang ditemukan.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-4">
-                {filteredProducts.map((product) => (
+                {sortedProducts.map((product) => (
                   <ProductCard
                     key={product.id}
                     item={product}

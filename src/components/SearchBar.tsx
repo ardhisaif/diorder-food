@@ -1,14 +1,17 @@
-import { useEffect, useState, useCallback } from 'react';
-import { Search } from 'lucide-react';
+import { useEffect, useState, useCallback } from "react";
+import { Search } from "lucide-react";
 
 interface SearchBarProps {
   onSearch: (query: string) => void;
   debounceTime?: number;
 }
 
-const SearchBar: React.FC<SearchBarProps> = ({ onSearch, debounceTime = 300 }) => {
-  const [query, setQuery] = useState<string>('');
-  const [debouncedQuery, setDebouncedQuery] = useState<string>('');
+const SearchBar: React.FC<SearchBarProps> = ({
+  onSearch,
+  debounceTime = 300,
+}) => {
+  const [query, setQuery] = useState<string>("");
+  const [debouncedQuery, setDebouncedQuery] = useState<string>("");
 
   // Set debouncedQuery after delay
   useEffect(() => {
@@ -21,15 +24,20 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch, debounceTime = 300 }) =
 
   // Optimize onSearch with useCallback
   const handleSearch = useCallback(() => {
-    if (debouncedQuery.trim() !== '') {
-      onSearch(debouncedQuery);
-    }
+    onSearch(debouncedQuery);
   }, [debouncedQuery, onSearch]);
 
   // Trigger search when debouncedQuery changes
   useEffect(() => {
     handleSearch();
   }, [debouncedQuery, handleSearch]);
+
+  // Trigger search immediately when query is cleared
+  useEffect(() => {
+    if (query === "") {
+      onSearch("");
+    }
+  }, [query, onSearch]);
 
   return (
     <div className="mb-6">

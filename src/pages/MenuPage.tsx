@@ -14,7 +14,7 @@ const MenuPage: React.FC = () => {
   const [merchant, setMerchant] = useState<Merchant | null>(null);
   const [menuItems, setMenuItems] = useState<MenuItemType[]>([]);
   const [isOpen, setIsOpen] = useState<boolean>(false);
-  const { getMerchantItems, getCartTotal } = useCart();
+  const { getMerchantItems, getSubtotal } = useCart();
   const navigate = useNavigate();
   
   useEffect(() => {
@@ -62,7 +62,7 @@ const MenuPage: React.FC = () => {
 
   const cartItems = getMerchantItems(merchant.id);
   const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-  const totalAmount = getCartTotal();
+  const totalAmount = getSubtotal();
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
