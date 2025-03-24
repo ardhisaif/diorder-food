@@ -1,10 +1,4 @@
-import React, {
-  useState,
-  useMemo,
-  useCallback,
-  useEffect,
-  useRef,
-} from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { Merchant, MenuItem } from "../types";
 import MerchantCard from "../components/MerchantCard";
 import Header from "../components/Header";
@@ -35,7 +29,6 @@ const HomePage: React.FC = () => {
   );
   const { getMerchantItems, getSubtotal } = useCart();
   const navigate = useNavigate();
-  const containerRef = useRef<HTMLDivElement>(null);
 
   // Menggunakan useMemo agar total items tidak dihitung ulang pada setiap render
   const totalItems = useMemo(() => {
@@ -103,31 +96,8 @@ const HomePage: React.FC = () => {
     }
   }, [searchQuery]);
 
-  const handleSwipe = useCallback((e: TouchEvent) => {
-    const touch = e.changedTouches[0];
-    const startX = touch.clientX;
-    const handleTouchEnd = (endEvent: TouchEvent) => {
-      const endX = endEvent.changedTouches[0].clientX;
-      if (startX - endX > 50) {
-        setActiveTab("products");
-      } else if (endX - startX > 50) {
-        setActiveTab("merchants");
-      }
-      containerRef.current?.removeEventListener("touchend", handleTouchEnd);
-    };
-    containerRef.current?.addEventListener("touchend", handleTouchEnd);
-  }, []);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    container?.addEventListener("touchstart", handleSwipe);
-    return () => {
-      container?.removeEventListener("touchstart", handleSwipe);
-    };
-  }, [handleSwipe]);
-
   return (
-    <div ref={containerRef} className="min-h-screen bg-gray-100 pb-24">
+    <div className="min-h-screen bg-gray-100 pb-24">
       <Header title="Diorderin" />
       <main className="container mx-auto px-4 py-6">
         <div className="flex justify-center mb-4 space-x-4">
