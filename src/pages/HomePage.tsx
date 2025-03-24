@@ -102,7 +102,7 @@ const HomePage: React.FC = () => {
       <main className="container mx-auto px-4 py-6">
         <div className="flex justify-center mb-4 space-x-4">
           <button
-            className={`px-6 py-2 rounded-full font-semibold transition-colors ${
+            className={`px-6 py-2 rounded-full font-semibold transition-all duration-300 transform ${
               activeTab === "merchants"
                 ? "bg-orange-500 text-white"
                 : "bg-gray-200 text-gray-700"
@@ -112,7 +112,7 @@ const HomePage: React.FC = () => {
             Merchants
           </button>
           <button
-            className={`px-6 py-2 rounded-full font-semibold transition-colors ${
+            className={`px-6 py-2 rounded-full font-semibold transition-all duration-300 transform ${
               activeTab === "products"
                 ? "bg-orange-500 text-white"
                 : "bg-gray-200 text-gray-700"
