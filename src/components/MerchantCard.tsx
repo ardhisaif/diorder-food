@@ -13,6 +13,8 @@ const MerchantCard: React.FC<MerchantCardProps> = ({ merchant }) => {
   
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden mb-4">
+      <Link
+        to={`/menu/${merchant.id}`}>
       <div className="flex p-3">
         <img
           src={merchant.logo}
@@ -40,6 +42,7 @@ const MerchantCard: React.FC<MerchantCardProps> = ({ merchant }) => {
         } py-2 px-4 text-center font-medium flex items-center justify-center`}
       >
         Lihat Menu <ChevronRight size={16} className="ml-1" />
+      </Link>
       </Link>
     </div>
   );

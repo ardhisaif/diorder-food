@@ -4,11 +4,13 @@ import { Search } from "lucide-react";
 interface SearchBarProps {
   onSearch: (query: string) => void;
   debounceTime?: number;
+  placeholder?: string;
 }
 
 const SearchBar: React.FC<SearchBarProps> = ({
   onSearch,
   debounceTime = 300,
+  placeholder = "Cari...",
 }) => {
   const [query, setQuery] = useState<string>("");
   const [debouncedQuery, setDebouncedQuery] = useState<string>("");
@@ -44,7 +46,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
       <div className="relative">
         <input
           type="text"
-          placeholder="Cari makanan atau minuman..."
+          placeholder={placeholder}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="w-full bg-white border border-gray-300 rounded-lg py-3 px-4 pl-12 focus:outline-none focus:ring-2 focus:ring-orange-500"

@@ -66,7 +66,7 @@ const CartPage: React.FC = () => {
     const totalWithDelivery = subtotal + DELIVERY_FEE;
 
     // Format the order message for WhatsApp
-    let message = `*Pesanan Baru dari Diorderin*\n\n`;
+    let message = `*Pesanan Baru dari diorder*\n\n`;
     message += `*Nama*: ${customerInfo.name}\n`;
     message += `*Alamat*:\n`;
     message += `Kecamatan: Duduksampeyan\n`;
@@ -292,7 +292,7 @@ const CartPage: React.FC = () => {
               <div className="text-sm">
                 <div className="flex justify-between mb-1">
                   <span>Subtotal</span>
-                    <span className="pl-2">{formatCurrency(subtotal)}</span>
+                  <span className="pl-2">{formatCurrency(subtotal)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Ongkir</span>

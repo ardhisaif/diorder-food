@@ -1,4 +1,10 @@
-import React, { useState, useMemo, useCallback, useEffect, TouchEvent } from "react";
+import React, {
+  useState,
+  useMemo,
+  useCallback,
+  useEffect,
+  TouchEvent,
+} from "react";
 import { Merchant, MenuItem } from "../types";
 import MerchantCard from "../components/MerchantCard";
 import Header from "../components/Header";
@@ -24,15 +30,15 @@ const HomePage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [filteredProducts, setFilteredProducts] =
     useState<MenuItem[]>(menuData);
-  const [activeTab, setActiveTab] = useState<"merchants" | "products">(
-    "merchants"
-  );
+  const [activeTab, setActiveTab] = useState<
+    "merchants" | "makanan" | "minuman"
+  >("merchants");
   const { getMerchantItems, getSubtotal } = useCart();
   const navigate = useNavigate();
 
   // State untuk swipe gesture
-  const [touchStart, setTouchStart] = useState<number | null>(null);
-  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [touchCurrentX, setTouchCurrentX] = useState<number | null>(null);
 
   // Minimal swipe distance (dalam px)
   const minSwipeDistance = 50;
@@ -81,19 +87,17 @@ const HomePage: React.FC = () => {
     });
   }, []);
 
-  // Sort products by merchant open status
-  const sortedProducts = useMemo(() => {
-    return filteredProducts.sort((a, b) => {
-      const merchantA = merchants.find((m) => m.id === a.merchant_id);
-      const merchantB = merchants.find((m) => m.id === b.merchant_id);
-      const isOpenA = merchantA
-        ? isCurrentlyOpen(merchantA.openingHours)
-        : false;
-      const isOpenB = merchantB
-        ? isCurrentlyOpen(merchantB.openingHours)
-        : false;
-      return isOpenA === isOpenB ? 0 : isOpenA ? -1 : 1;
-    });
+  // Filter products by category
+  const filteredMakanan = useMemo(() => {
+    return filteredProducts.filter(
+      (item) => item.category.toLowerCase() === "makanan"
+    );
+  }, [filteredProducts]);
+
+  const filteredMinuman = useMemo(() => {
+    return filteredProducts.filter(
+      (item) => item.category.toLowerCase() === "minuman"
+    );
   }, [filteredProducts]);
 
   // Update filteredProducts when searchQuery changes
@@ -105,41 +109,49 @@ const HomePage: React.FC = () => {
 
   // Handle touch start
   const handleTouchStart = (e: TouchEvent) => {
-    setTouchEnd(null); // reset touchEnd
-    setTouchStart(e.targetTouches[0].clientX);
+    setTouchStartX(e.targetTouches[0].clientX);
+    setTouchCurrentX(e.targetTouches[0].clientX);
   };
 
   // Handle touch move
   const handleTouchMove = (e: TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX);
+    setTouchCurrentX(e.targetTouches[0].clientX);
   };
 
   // Handle touch end
   const handleTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
-    
-    const distance = touchStart - touchEnd;
+    if (!touchStartX || !touchCurrentX) return;
+
+    const distance = touchStartX - touchCurrentX;
     const isLeftSwipe = distance > minSwipeDistance;
     const isRightSwipe = distance < -minSwipeDistance;
-    
-    // Swipe right to left (merchants -> products)
-    if (isLeftSwipe && activeTab === "merchants") {
-      setActiveTab("products");
+
+    // Swipe right to left (merchants -> makanan -> minuman)
+    if (isLeftSwipe) {
+      if (activeTab === "merchants") {
+        setActiveTab("makanan");
+      } else if (activeTab === "makanan") {
+        setActiveTab("minuman");
+      }
     }
-    // Swipe left to right (products -> merchants)
-    else if (isRightSwipe && activeTab === "products") {
-      setActiveTab("merchants");
+    // Swipe left to right (minuman -> makanan -> merchants)
+    else if (isRightSwipe) {
+      if (activeTab === "minuman") {
+        setActiveTab("makanan");
+      } else if (activeTab === "makanan") {
+        setActiveTab("merchants");
+      }
     }
-    
+
     // Reset touch values
-    setTouchStart(null);
-    setTouchEnd(null);
+    setTouchStartX(null);
+    setTouchCurrentX(null);
   };
 
   return (
     <div className="min-h-screen bg-gray-100 pb-24">
-      <Header title="Diorderin" />
-      <main 
+      <Header title="diorder" />
+      <main
         className="container mx-auto px-4 py-6"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
@@ -154,41 +166,77 @@ const HomePage: React.FC = () => {
             }`}
             onClick={() => setActiveTab("merchants")}
           >
-            Merchants
+            Resto
           </button>
           <button
             className={`px-6 py-2 rounded-full font-semibold transition-all duration-300 transform ${
-              activeTab === "products"
+              activeTab === "makanan"
                 ? "bg-orange-500 text-white"
                 : "bg-gray-200 text-gray-700"
             }`}
-            onClick={() => setActiveTab("products")}
+            onClick={() => setActiveTab("makanan")}
           >
-            Products
+            Makanan
+          </button>
+          <button
+            className={`px-6 py-2 rounded-full font-semibold transition-all duration-300 transform ${
+              activeTab === "minuman"
+                ? "bg-orange-500 text-white"
+                : "bg-gray-200 text-gray-700"
+            }`}
+            onClick={() => setActiveTab("minuman")}
+          >
+            Minuman
           </button>
         </div>
 
         <div className="transition-opacity duration-300">
-          {activeTab === "products" && <SearchBar onSearch={handleSearch} />}
+          {(activeTab === "makanan" || activeTab === "minuman") && (
+            <SearchBar
+              onSearch={handleSearch}
+              placeholder={`Cari ${
+                activeTab === "makanan" ? "makanan" : "minuman"
+              }...`}
+            />
+          )}
 
           {activeTab === "merchants" ? (
             <>
-              <h2 className="text-xl font-bold mb-4">Daftar Merchant</h2>
+              <h2 className="text-xl font-bold mb-4">Daftar Resto</h2>
               <div className="grid gap-4">
                 {sortedMerchants.map((merchant: Merchant) => (
                   <MerchantCard key={merchant.id} merchant={merchant} />
                 ))}
               </div>
             </>
-          ) : (
+          ) : activeTab === "makanan" ? (
             <>
-              {sortedProducts.length === 0 ? (
+              {filteredMakanan.length === 0 ? (
                 <div className="text-center p-8 bg-white rounded-lg shadow-md">
-                  <p>Tidak ada produk yang ditemukan.</p>
+                  <p>Tidak ada makanan yang ditemukan.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-4">
-                  {sortedProducts.map((product) => (
+                  {filteredMakanan.map((product) => (
+                    <ProductCard
+                      key={product.id}
+                      item={product}
+                      merchantId={product.merchant_id}
+                      merchantName={getMerchantName(product.merchant_id)}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              {filteredMinuman.length === 0 ? (
+                <div className="text-center p-8 bg-white rounded-lg shadow-md">
+                  <p>Tidak ada minuman yang ditemukan.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-4">
+                  {filteredMinuman.map((product) => (
                     <ProductCard
                       key={product.id}
                       item={product}
