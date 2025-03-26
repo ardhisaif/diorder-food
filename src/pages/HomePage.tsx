@@ -33,7 +33,7 @@ const HomePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<
     "merchants" | "makanan" | "minuman"
   >("merchants");
-  const { getMerchantItems, getSubtotal } = useCart();
+  const { getItemCount, getSubtotal } = useCart();
   const navigate = useNavigate();
 
   // State untuk swipe gesture
@@ -43,14 +43,7 @@ const HomePage: React.FC = () => {
   // Minimal swipe distance (dalam px)
   const minSwipeDistance = 50;
 
-  // Menggunakan useMemo agar total items tidak dihitung ulang pada setiap render
-  const totalItems = useMemo(() => {
-    return merchants.reduce((sum, merchant) => {
-      const items = getMerchantItems(merchant.id);
-      return sum + items.reduce((itemSum, item) => itemSum + item.quantity, 0);
-    }, 0);
-  }, [getMerchantItems]);
-
+  const totalItems = getItemCount();
   const totalAmount = useMemo(() => getSubtotal(), [getSubtotal]);
 
   // Callback untuk menangani pencarian, memastikan fungsi tidak berubah di setiap render
@@ -251,7 +244,7 @@ const HomePage: React.FC = () => {
         </div>
       </main>
 
-      {totalItems > 0 && (
+      {totalItems > 0 && totalAmount > 0 && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4">
           <div className="container mx-auto max-w-md">
             <div className="flex justify-between items-center">

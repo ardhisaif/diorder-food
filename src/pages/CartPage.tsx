@@ -285,7 +285,7 @@ const CartPage: React.FC = () => {
         )}
       </div>
 
-      {!cartEmpty && (
+      {!cartEmpty && subtotal > 0 && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4">
           <div className="container mx-auto max-w-md">
             <div className="flex justify-between items-center mb-4">
