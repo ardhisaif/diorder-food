@@ -4,7 +4,7 @@
     "merchant_id": 1,
     "name": "Mi Pedes Level 1",
     "price": 10000,
-    "image": "/images/mi_pedes_level_1.jpg",
+    "image": "/images/mi-pedes.jpg",
     "category": "Makanan"
   },
   {
@@ -12,7 +12,7 @@
     "merchant_id": 1,
     "name": "Mi Pedes Level 2",
     "price": 10000,
-    "image": "/images/mi_pedes_level_1.jpg",
+    "image": "/images/mi-pedes.jpg",
     "category": "Makanan"
   },
   {
@@ -20,7 +20,7 @@
     "merchant_id": 1,
     "name": "Mi Pedes Level 3",
     "price": 10000,
-    "image": "/images/mi_pedes_level_1.jpg",
+    "image": "/images/mi-pedes.jpg",
     "category": "Makanan"
   },
   {
@@ -28,7 +28,7 @@
     "merchant_id": 1,
     "name": "Mi Pedes Level 4",
     "price": 10000,
-    "image": "/images/mi_pedes_level_1.jpg",
+    "image": "/images/mi-pedes.jpg",
     "category": "Makanan"
   },
   {
@@ -36,7 +36,7 @@
     "merchant_id": 1,
     "name": "Mi Pedes Level 5",
     "price": 10000,
-    "image": "/images/mi_pedes_level_1.jpg",
+    "image": "/images/mi-pedes.jpg",
     "category": "Makanan"
   },
   {
@@ -45,14 +45,6 @@
     "name": "Es Teh Manis",
     "price": 5000,
     "image": "https://images.unsplash.com/photo-1499638673689-79a0b5115d87?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&h=300&q=80",
-    "category": "Minuman"
-  },
-  {
-    "id": 7,
-    "merchant_id": 1,
-    "name": "Es Jeruk",
-    "price": 7000,
-    "image": "https://images.unsplash.com/photo-1613478223719-2ab802602423?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&h=300&q=80",
     "category": "Minuman"
   },
   {
@@ -70,5 +62,110 @@
     "price": 5000,
     "image": "https://images.unsplash.com/photo-1499638673689-79a0b5115d87?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&h=300&q=80",
     "category": "Minuman"
+  },
+  {
+    "id": 10,
+    "merchant_id": 1,
+    "name": "Beef per pcs (toping)",
+    "price": 1000,
+    "image": "/images/beef-slice.jpeg",
+    "category": "Makanan"
+  },
+  {
+    "id": 11,
+    "merchant_id": 1,
+    "name": "Sosis 3 pcs (toping)",
+    "price": 2000,
+    "image": "/images/sosis-ayam.jpeg",
+    "category": "Makanan"
+  },
+  {
+    "id": 12,
+    "merchant_id": 1,
+    "name": "Pentol 3 pcs (toping)",
+    "price": 2000,
+    "image": "/images/pentol.jpeg",
+    "category": "Makanan"
+  },
+  {
+    "id": 13,
+    "merchant_id": 1,
+    "name": "Ayam tabur (toping)",
+    "price": 3000,
+    "image": "/images/ayam-tabur.jpg",
+    "category": "Makanan"
+  },
+  {
+    "id": 14,
+    "merchant_id": 1,
+    "name": "Kerupuk pangsit (toping)",
+    "price": 500,
+    "image": "/images/kerupuk-pangsit.jpeg",
+    "category": "Makanan"
+  },
+  {
+    "id": 15,
+    "merchant_id": 3,
+    "name": "Cilok Bumbu Kacang",
+    "price": 10000,
+    "image": "/images/cilok-bumbu-kacang.jpeg",
+    "category": "Makanan"
+  },
+  {
+    "id": 16,
+    "merchant_id": 3,
+    "name": "Bakso Aci",
+    "price": 10000,
+    "image": "/images/bakso-aci.png",
+    "category": "Makanan"
+  },
+  {
+    "id": 17,
+    "merchant_id": 3,
+    "name": "Bakso Seafood",
+    "price": 10000,
+    "image": "/images/bakso-seafood.png",
+    "category": "Makanan"
+  },
+  {
+    "id": 18,
+    "merchant_id": 3,
+    "name": "Batagor Campur",
+    "price": 10000,
+    "image": "/images/batagor-campur.png",
+    "category": "Makanan"
+  },
+  {
+    "id": 19,
+    "merchant_id": 3,
+    "name": "Spageti Bolognese",
+    "price": 10000,
+    "image": "/images/spageti-bolognese.png",
+    "category": "Makanan"
+  },
+  {
+    "id": 20,
+    "merchant_id": 3,
+    "name": "Es Lumut Melon",
+    "price": 5000,
+    "image": "/images/es-lumut-melon.png",
+    "category": "Minuman"
+  },
+  {
+    "id": 21,
+    "merchant_id": 3,
+    "name": "Es Lumut Stroberi",
+    "price": 5000,
+    "image": "/images/es-lumut-stroberi.png",
+    "category": "Minuman"
+  },
+  {
+    "id": 22,
+    "merchant_id": 3,
+    "name": "Es Lemon Tea",
+    "price": 5000,
+    "image": "/images/es-lemon-tea.png",
+    "category": "Minuman"
   }
+
 ]
