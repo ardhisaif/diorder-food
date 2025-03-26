@@ -35,14 +35,13 @@ const MerchantCard: React.FC<MerchantCardProps> = ({ merchant }) => {
           </div>
         </div>
       </div>
-      <Link
-        to={`/menu/${merchant.id}`}
+      <div
         className={`${
           isOpen ? "bg-orange-500 text-white" : "bg-gray-500 text-white"
         } py-2 px-4 text-center font-medium flex items-center justify-center`}
       >
         Lihat Menu <ChevronRight size={16} className="ml-1" />
-      </Link>
+      </div>
       </Link>
     </div>
   );

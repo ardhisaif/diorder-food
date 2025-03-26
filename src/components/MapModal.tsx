@@ -29,7 +29,7 @@ const MapModal: React.FC<MapModalProps> = ({ isOpen, onClose, onSelectLocation }
     googleMapsApiKey: 'AIzaSyBhDwQcSRVGmPKfsYnQNaxZeUNYKxJMdKA' // Replace with your API key
   });
 
-  const onMapLoad = useCallback((map: google.maps.Map) => {
+  const onMapLoad = useCallback(() => {
     geocoderRef.current = new google.maps.Geocoder();
   }, []);
 

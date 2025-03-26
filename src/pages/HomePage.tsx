@@ -37,8 +37,8 @@ const HomePage: React.FC = () => {
   const navigate = useNavigate();
 
   // State untuk swipe gesture
-  const [touchStartX, setTouchStartX] = useState<number | null>(null);
-  const [touchCurrentX, setTouchCurrentX] = useState<number | null>(null);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
   // Minimal swipe distance (dalam px)
   const minSwipeDistance = 50;
@@ -109,20 +109,20 @@ const HomePage: React.FC = () => {
 
   // Handle touch start
   const handleTouchStart = (e: TouchEvent) => {
-    setTouchStartX(e.targetTouches[0].clientX);
-    setTouchCurrentX(e.targetTouches[0].clientX);
+    setTouchEnd(null); // reset touchEnd
+    setTouchStart(e.targetTouches[0].clientX);
   };
 
   // Handle touch move
   const handleTouchMove = (e: TouchEvent) => {
-    setTouchCurrentX(e.targetTouches[0].clientX);
+    setTouchEnd(e.targetTouches[0].clientX);
   };
 
   // Handle touch end
   const handleTouchEnd = () => {
-    if (!touchStartX || !touchCurrentX) return;
+    if (!touchStart || !touchEnd) return;
 
-    const distance = touchStartX - touchCurrentX;
+    const distance = touchStart - touchEnd;
     const isLeftSwipe = distance > minSwipeDistance;
     const isRightSwipe = distance < -minSwipeDistance;
 
@@ -144,8 +144,8 @@ const HomePage: React.FC = () => {
     }
 
     // Reset touch values
-    setTouchStartX(null);
-    setTouchCurrentX(null);
+    setTouchStart(null);
+    setTouchEnd(null);
   };
 
   return (
@@ -157,9 +157,9 @@ const HomePage: React.FC = () => {
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        <div className="flex justify-center mb-4 space-x-4">
+        <div className="flex justify-center mb-4 space-x-2 sm:space-x-4">
           <button
-            className={`px-6 py-2 rounded-full font-semibold transition-all duration-300 transform ${
+            className={`px-4 sm:px-6 py-2 rounded-full font-semibold transition-all duration-300 transform ${
               activeTab === "merchants"
                 ? "bg-orange-500 text-white"
                 : "bg-gray-200 text-gray-700"
@@ -169,7 +169,7 @@ const HomePage: React.FC = () => {
             Resto
           </button>
           <button
-            className={`px-6 py-2 rounded-full font-semibold transition-all duration-300 transform ${
+            className={`px-4 sm:px-6 py-2 rounded-full font-semibold transition-all duration-300 transform ${
               activeTab === "makanan"
                 ? "bg-orange-500 text-white"
                 : "bg-gray-200 text-gray-700"
@@ -179,7 +179,7 @@ const HomePage: React.FC = () => {
             Makanan
           </button>
           <button
-            className={`px-6 py-2 rounded-full font-semibold transition-all duration-300 transform ${
+            className={`px-4 sm:px-6 py-2 rounded-full font-semibold transition-all duration-300 transform ${
               activeTab === "minuman"
                 ? "bg-orange-500 text-white"
                 : "bg-gray-200 text-gray-700"
