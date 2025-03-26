@@ -80,17 +80,34 @@ const HomePage: React.FC = () => {
     });
   }, []);
 
-  // Filter products by category
+  // Sort products by merchant open status
+  const sortProductsByMerchantOpenStatus = (products: MenuItem[]) => {
+    return products.sort((a, b) => {
+      const merchantA = merchants.find((m) => m.id === a.merchant_id);
+      const merchantB = merchants.find((m) => m.id === b.merchant_id);
+      const isOpenA = merchantA
+        ? isCurrentlyOpen(merchantA.openingHours)
+        : false;
+      const isOpenB = merchantB
+        ? isCurrentlyOpen(merchantB.openingHours)
+        : false;
+      return isOpenA === isOpenB ? 0 : isOpenA ? -1 : 1;
+    });
+  };
+
+  // Filter and sort products by category
   const filteredMakanan = useMemo(() => {
-    return filteredProducts.filter(
+    const makanan = filteredProducts.filter(
       (item) => item.category.toLowerCase() === "makanan"
     );
+    return sortProductsByMerchantOpenStatus(makanan);
   }, [filteredProducts]);
 
   const filteredMinuman = useMemo(() => {
-    return filteredProducts.filter(
+    const minuman = filteredProducts.filter(
       (item) => item.category.toLowerCase() === "minuman"
     );
+    return sortProductsByMerchantOpenStatus(minuman);
   }, [filteredProducts]);
 
   // Update filteredProducts when searchQuery changes
