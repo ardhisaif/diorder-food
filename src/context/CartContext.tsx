@@ -29,7 +29,7 @@ interface CartContextType {
   getMerchantItems: (merchantId: number) => CartItem[];
   getMerchantInfo: (
     merchantId: number
-  ) => { name: string; delivery_fee: number } | null;
+  ) => { name: string } | null;
   getItemQuantity: (itemId: number) => number;
   getSubtotal: () => number;
 }
@@ -241,7 +241,6 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
     return merchant
       ? {
           name: merchant.name,
-          delivery_fee: merchant.delivery_fee || 0,
         }
       : null;
   };
