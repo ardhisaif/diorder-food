@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 
 .env
+
+/dataBackup
+/src/utils/supabase/sandbox.js

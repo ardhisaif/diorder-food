@@ -1,11 +1,12 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import CartItem from "../components/CartItem";
 import Header from "../components/Header";
-import merchantsData from "../data/merchants.json";
+import supabase from "../utils/supabase/client";
 import { ShoppingBag, Plus } from "lucide-react";
 import { isCurrentlyOpen } from "../utils/merchantUtils";
+import { Merchant } from "../types";
 
 const WHATSAPP_NUMBER = "6282217012023";
 const DELIVERY_FEE = 5000;
@@ -20,11 +21,27 @@ const CartPage: React.FC = () => {
     clearCart,
   } = useCart();
   const navigate = useNavigate();
+  const [merchantsWithItems, setMerchantsWithItems] = useState<Merchant[]>([]);
 
-  // Get all merchants that have items in the cart
-  const merchantsWithItems = merchantsData.filter(
-    (m) => getMerchantItems(m.id).length > 0
-  );
+  useEffect(() => {
+    const fetchMerchantsWithItems = async () => {
+      const { data: merchants, error } = await supabase
+        .from("merchants")
+        .select("*");
+
+      if (error) {
+        console.error("Error fetching merchants:", error);
+        setMerchantsWithItems([]);
+      } else {
+        const filteredMerchants = merchants.filter(
+          (m) => getMerchantItems(m.id).length > 0
+        );
+        setMerchantsWithItems(filteredMerchants);
+      }
+    };
+
+    fetchMerchantsWithItems();
+  }, [getMerchantItems]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("id-ID", {

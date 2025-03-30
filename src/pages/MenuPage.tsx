@@ -3,11 +3,10 @@ import { useParams, useNavigate } from "react-router-dom";
 import { MenuItem as MenuItemType, Merchant } from "../types";
 import MenuItem from "../components/MenuItem";
 import Header from "../components/Header";
-import menuData from "../data/menu.json";
-import merchantsData from "../data/merchants.json";
 import { useCart } from "../context/CartContext";
 import { ShoppingBag, Clock } from "lucide-react";
 import { isCurrentlyOpen } from "../utils/merchantUtils";
+import supabase from "../utils/supabase/client"; // Import Supabase client
 
 const MenuPage: React.FC = () => {
   const { merchantId } = useParams<{ merchantId: string }>();
@@ -18,22 +17,34 @@ const MenuPage: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Find the merchant
-    const foundMerchant = merchantsData.find(
-      (m) => m.id === Number(merchantId)
-    );
+    const fetchMerchantAndMenu = async () => {
+      const { data: merchantData, error: merchantError } = await supabase
+        .from("merchants")
+        .select("*")
+        .eq("id", Number(merchantId))
+        .single();
 
-    if (foundMerchant) {
-      setMerchant(foundMerchant);
-      setIsOpen(isCurrentlyOpen(foundMerchant.openingHours));
-    }
+      const { data: menuData, error: menuError } = await supabase
+        .from("menu")
+        .select("*")
+        .eq("merchant_id", Number(merchantId));
 
-    // Filter menu items for this merchant
-    const filteredMenu = menuData.filter(
-      (item) => item.merchant_id === Number(merchantId)
-    );
+      if (merchantError || menuError) {
+        console.error(
+          "Error fetching data from Supabase:",
+          merchantError || menuError
+        );
+        return;
+      }
 
-    setMenuItems(filteredMenu);
+      setMerchant(merchantData || null);
+      setMenuItems(menuData || []);
+      setIsOpen(
+        merchantData ? isCurrentlyOpen(merchantData.openingHours) : false
+      );
+    };
+
+    fetchMerchantAndMenu();
   }, [merchantId]);
 
   // Update isOpen status every minute
@@ -86,11 +97,6 @@ const MenuPage: React.FC = () => {
               {merchant.openingHours.close}
             </span>
           </div>
-          {/* {!isOpen && (
-            <div className="mt-2 p-2 bg-red-100 rounded-md text-red-800 text-sm">
-              Merchant saat ini tutup. Anda dapat melihat menu, tetapi tidak dapat melakukan pemesanan.
-            </div>
-          )} */}
         </div>
 
         {Object.entries(menuByCategory).map(([category, items]) => (

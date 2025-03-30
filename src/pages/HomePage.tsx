@@ -10,12 +10,11 @@ import MerchantCard from "../components/MerchantCard";
 import Header from "../components/Header";
 import SearchBar from "../components/SearchBar";
 import ProductCard from "../components/ProductCard";
-import merchants from "../data/merchants.json";
-import menuData from "../data/menu.json";
 import { ShoppingBag } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { useNavigate } from "react-router-dom";
 import { isCurrentlyOpen } from "../utils/merchantUtils";
+import supabase from "../utils/supabase/client"; // Import Supabase client
 
 // Fungsi untuk format mata uang, dipindahkan ke luar agar tidak dideklarasikan ulang
 const formatCurrency = (amount: number) => {
@@ -28,11 +27,12 @@ const formatCurrency = (amount: number) => {
 
 const HomePage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [filteredProducts, setFilteredProducts] =
-    useState<MenuItem[]>(menuData);
+  const [filteredProducts, setFilteredProducts] = useState<MenuItem[]>([]);
   const [activeTab, setActiveTab] = useState<
     "merchants" | "makanan" | "minuman"
   >("merchants");
+  const [merchants, setMerchants] = useState<Merchant[]>([]);
+  const [menuData, setMenuData] = useState<MenuItem[]>([]);
   const { getItemCount, getSubtotal } = useCart();
   const navigate = useNavigate();
 
@@ -46,54 +46,89 @@ const HomePage: React.FC = () => {
   const totalItems = getItemCount();
   const totalAmount = useMemo(() => getSubtotal(), [getSubtotal]);
 
-  // Callback untuk menangani pencarian, memastikan fungsi tidak berubah di setiap render
-  const handleSearch = useCallback((query: string) => {
-    setSearchQuery(query);
+  // Fetch merchants and menu data from Supabase
+  useEffect(() => {
+    const fetchData = async () => {
+      const { data: merchantsData, error: merchantsError } = await supabase
+        .from("merchants")
+        .select("*");
+      const { data: menuItemsData, error: menuError } = await supabase
+        .from("menu")
+        .select("*");
 
-    if (!query.trim()) {
-      setFilteredProducts(menuData);
-      return;
-    }
+      if (merchantsError || menuError) {
+        console.error(
+          "Error fetching data from Supabase:",
+          merchantsError || menuError
+        );
+        return;
+      }
 
-    const normalizedQuery = query.toLowerCase();
-    const results = menuData.filter(
-      (item) =>
-        item.name.toLowerCase().includes(normalizedQuery) ||
-        item.category.toLowerCase().includes(normalizedQuery)
-    );
+      setMerchants(merchantsData || []);
+      setMenuData(menuItemsData || []);
+      setFilteredProducts(menuItemsData || []);
+    };
 
-    setFilteredProducts(results);
+    fetchData();
   }, []);
+
+  // Callback untuk menangani pencarian, memastikan fungsi tidak berubah di setiap render
+  const handleSearch = useCallback(
+    (query: string) => {
+      setSearchQuery(query);
+
+      if (!query.trim()) {
+        setFilteredProducts(menuData);
+        return;
+      }
+
+      const normalizedQuery = query.toLowerCase();
+      const results = menuData.filter(
+        (item) =>
+          item.name.toLowerCase().includes(normalizedQuery) ||
+          item.category.toLowerCase().includes(normalizedQuery)
+      );
+
+      setFilteredProducts(results);
+    },
+    [menuData]
+  );
 
   // Find merchant name by id
-  const getMerchantName = useCallback((merchantId: number): string => {
-    const merchant = merchants.find((m) => m.id === merchantId);
-    return merchant ? merchant.name : "";
-  }, []);
+  const getMerchantName = useCallback(
+    (merchantId: number): string => {
+      const merchant = merchants.find((m) => m.id === merchantId);
+      return merchant ? merchant.name : "";
+    },
+    [merchants]
+  );
 
   // Sort merchants by open status
   const sortedMerchants = useMemo(() => {
     return merchants.sort((a, b) => {
-      const isOpenA = isCurrentlyOpen(a.openingHours);
-      const isOpenB = isCurrentlyOpen(b.openingHours);
+      const isOpenA = a.openingHours ? isCurrentlyOpen(a.openingHours) : false;
+      const isOpenB = b.openingHours ? isCurrentlyOpen(b.openingHours) : false;
       return isOpenA === isOpenB ? 0 : isOpenA ? -1 : 1;
     });
-  }, []);
+  }, [merchants]);
 
   // Sort products by merchant open status
-  const sortProductsByMerchantOpenStatus = (products: MenuItem[]) => {
-    return products.sort((a, b) => {
-      const merchantA = merchants.find((m) => m.id === a.merchant_id);
-      const merchantB = merchants.find((m) => m.id === b.merchant_id);
-      const isOpenA = merchantA
-        ? isCurrentlyOpen(merchantA.openingHours)
-        : false;
-      const isOpenB = merchantB
-        ? isCurrentlyOpen(merchantB.openingHours)
-        : false;
-      return isOpenA === isOpenB ? 0 : isOpenA ? -1 : 1;
-    });
-  };
+  const sortProductsByMerchantOpenStatus = useCallback(
+    (products: MenuItem[]) => {
+      return products.sort((a, b) => {
+        const merchantA = merchants.find((m) => m.id === a.merchant_id);
+        const merchantB = merchants.find((m) => m.id === b.merchant_id);
+        const isOpenA = merchantA?.openingHours
+          ? isCurrentlyOpen(merchantA.openingHours)
+          : false;
+        const isOpenB = merchantB?.openingHours
+          ? isCurrentlyOpen(merchantB.openingHours)
+          : false;
+        return isOpenA === isOpenB ? 0 : isOpenA ? -1 : 1;
+      });
+    },
+    [merchants]
+  );
 
   // Filter and sort products by category
   const filteredMakanan = useMemo(() => {
@@ -101,21 +136,21 @@ const HomePage: React.FC = () => {
       (item) => item.category.toLowerCase() === "makanan"
     );
     return sortProductsByMerchantOpenStatus(makanan);
-  }, [filteredProducts]);
+  }, [filteredProducts, sortProductsByMerchantOpenStatus]);
 
   const filteredMinuman = useMemo(() => {
     const minuman = filteredProducts.filter(
       (item) => item.category.toLowerCase() === "minuman"
     );
     return sortProductsByMerchantOpenStatus(minuman);
-  }, [filteredProducts]);
+  }, [filteredProducts, sortProductsByMerchantOpenStatus]);
 
   // Update filteredProducts when searchQuery changes
   useEffect(() => {
     if (!searchQuery.trim()) {
       setFilteredProducts(menuData);
     }
-  }, [searchQuery]);
+  }, [searchQuery, menuData]);
 
   // Handle touch start
   const handleTouchStart = (e: TouchEvent) => {

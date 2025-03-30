@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { MenuItem } from "../types";
 import { Plus, Minus, Info, Clock } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { Link } from "react-router-dom";
 import { isCurrentlyOpen } from "../utils/merchantUtils";
-import merchantsData from "../data/merchants.json";
+import supabase from "../utils/supabase/client";
+import { Merchant } from "../types";
 
 interface ProductCardProps {
   item: MenuItem;
@@ -19,7 +20,27 @@ const ProductCard: React.FC<ProductCardProps> = ({
 }) => {
   const { addToCart, removeFromCart, getItemQuantity } = useCart();
   const quantity = getItemQuantity(item.id);
-  const merchant = merchantsData.find(m => m.id === merchantId);
+  const [merchant, setMerchant] = useState<Merchant | null>(null);
+
+  useEffect(() => {
+    const fetchMerchant = async () => {
+      const { data, error } = await supabase
+        .from("merchants")
+        .select("*")
+        .eq("id", merchantId)
+        .single();
+
+      if (error) {
+        console.error("Error fetching merchant:", error);
+        setMerchant(null);
+      } else {
+        setMerchant(data);
+      }
+    };
+
+    fetchMerchant();
+  }, [merchantId]);
+
   const isOpen = merchant ? isCurrentlyOpen(merchant.openingHours) : false;
 
   const formatCurrency = (amount: number) => {
@@ -31,7 +52,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
   };
 
   return (
-    <div className={`bg-white rounded-lg shadow-md overflow-hidden ${!isOpen ? 'grayscale' : ''}`}>
+    <div
+      className={`bg-white rounded-lg shadow-md overflow-hidden ${
+        !isOpen ? "grayscale" : ""
+      }`}
+    >
       <div className="flex">
         <img
           src={item.image}
@@ -71,7 +96,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
                   </button>
                   <span className="mx-2 font-medium">{quantity}</span>
                 </>
-                
+
                 <button
                   onClick={() => addToCart(item, merchantId)}
                   className="w-6 h-6 flex items-center justify-center bg-orange-500 text-white rounded-full"

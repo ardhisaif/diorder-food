@@ -6,8 +6,9 @@ import React, {
   ReactNode,
 } from "react";
 import { CartItem, CustomerInfo, MenuItem } from "../types";
-import merchantsData from "../data/merchants.json";
+import supabase from "../utils/supabase/client"; // Import Supabase client
 import { isCurrentlyOpen } from "../utils/merchantUtils";
+import { Merchant } from "../types";
 
 interface CartContextType {
   cartItems: CartItem[];
@@ -27,7 +28,7 @@ interface CartContextType {
   getMerchantTotal: (merchantId: number) => number;
   getItemCount: () => number;
   getMerchantItems: (merchantId: number) => CartItem[];
-  getMerchantInfo: (
+  useMerchantInfo: (
     merchantId: number
   ) => { name: string } | null;
   getItemQuantity: (itemId: number) => number;
@@ -236,13 +237,31 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
     return state.items[merchantId] || [];
   };
 
-  const getMerchantInfo = (merchantId: number) => {
-    const merchant = merchantsData.find((m) => m.id === merchantId);
-    return merchant
-      ? {
-          name: merchant.name,
+  const useMerchantInfo = (merchantId: number) => {
+    const [merchantInfo, setMerchantInfo] = useState<{ name: string } | null>(
+      null
+    );
+
+    useEffect(() => {
+      const fetchMerchant = async () => {
+        const { data, error } = await supabase
+          .from("merchants")
+          .select("name")
+          .eq("id", merchantId)
+          .single();
+
+        if (error) {
+          console.error("Error fetching merchant info:", error);
+          setMerchantInfo(null);
+        } else {
+          setMerchantInfo(data);
         }
-      : null;
+      };
+
+      fetchMerchant();
+    }, [merchantId]);
+
+    return merchantInfo;
   };
 
   const getItemQuantity = (itemId: number) => {
@@ -254,6 +273,22 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
     }
     return 0;
   };
+
+  const [merchantsData, setMerchantsData] = useState<Merchant[]>([]);
+
+  useEffect(() => {
+    const fetchMerchantsData = async () => {
+      const { data, error } = await supabase.from('merchants').select('*');
+      if (error) {
+        console.error("Error fetching merchants data:", error);
+        setMerchantsData([]);
+      } else {
+        setMerchantsData(data || []);
+      }
+    };
+
+    fetchMerchantsData();
+  }, []);
 
   const getSubtotal = () => {
     return Object.keys(state.items).reduce((total, merchantId) => {
@@ -281,7 +316,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
         getMerchantTotal,
         getItemCount,
         getMerchantItems,
-        getMerchantInfo,
+        useMerchantInfo,
         getItemQuantity,
         getSubtotal,
       }}
