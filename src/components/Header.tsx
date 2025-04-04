@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Info } from "lucide-react";
+import { ArrowLeft, MessageCircle } from "lucide-react";
 
 interface HeaderProps {
   title: string;
@@ -27,7 +27,7 @@ const Header: React.FC<HeaderProps> = ({ title, showBack = false }) => {
           <h1 className="text-xl font-bold">{title}</h1>
         </div>
         <button onClick={handleWhatsAppChat} className="relative">
-          <Info size={24} />
+          <MessageCircle size={24} />
         </button>
       </div>
     </header>
