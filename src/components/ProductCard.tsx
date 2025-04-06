@@ -38,7 +38,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
       }
     };
 
-    fetchMerchant();
+    if (navigator.onLine) fetchMerchant();
   }, [merchantId]);
 
   const isOpen = merchant ? isCurrentlyOpen(merchant.openingHours) : false;

@@ -15,6 +15,7 @@ import { useCart } from "../context/CartContext";
 import { useNavigate } from "react-router-dom";
 import { isCurrentlyOpen } from "../utils/merchantUtils";
 import supabase from "../utils/supabase/client"; // Import Supabase client
+import { indexedDBService } from "../utils/indexedDB";
 
 // Fungsi untuk format mata uang, dipindahkan ke luar agar tidak dideklarasikan ulang
 const formatCurrency = (amount: number) => {
@@ -35,7 +36,6 @@ const HomePage: React.FC = () => {
   const [menuData, setMenuData] = useState<MenuItem[]>([]);
   const { getItemCount, getSubtotal } = useCart();
   const navigate = useNavigate();
-
   // State untuk swipe gesture
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
@@ -46,30 +46,63 @@ const HomePage: React.FC = () => {
   const totalItems = getItemCount();
   const totalAmount = useMemo(() => getSubtotal(), [getSubtotal]);
 
-  // Fetch merchants and menu data from Supabase
   useEffect(() => {
-    const fetchData = async () => {
-      const { data: merchantsData, error: merchantsError } = await supabase
-        .from("merchants")
-        .select("*");
-      const { data: menuItemsData, error: menuError } = await supabase
-        .from("menu")
-        .select("*");
+    const initializeData = async () => {
+      try {
+        await indexedDBService.initDB();
 
-      if (merchantsError || menuError) {
-        console.error(
-          "Error fetching data from Supabase:",
-          merchantsError || menuError
-        );
-        return;
+        // Coba ambil data dari IndexedDB terlebih dahulu
+        const cachedMerchants = await indexedDBService.getAll("merchantInfo");
+        const cachedMenu = await indexedDBService.getAll("menuItems");
+
+        if (cachedMerchants.length > 0 && cachedMenu.length > 0) {
+          setMerchants(cachedMerchants);
+          setMenuData(cachedMenu);
+          setFilteredProducts(cachedMenu);
+        }
+
+        if (navigator.onLine) {
+          const { data: merchantsData, error: merchantsError } = await supabase
+            .from("merchants")
+            .select("*");
+          const { data: menuItemsData, error: menuError } = await supabase
+            .from("menu")
+            .select("*");
+          console.log("Data from IndexedDB:", {
+            cachedMerchants,
+            merchantsData,
+          });
+          if (merchantsError || menuError) {
+            console.error(
+              "Error fetching data from Supabase:",
+              merchantsError || menuError
+            );
+            return;
+          }
+
+          // Simpan data ke state
+          setMerchants(merchantsData || []);
+          setMenuData(menuItemsData || []);
+          setFilteredProducts(menuItemsData || []);
+          // Simpan data ke IndexedDB
+          if (merchantsData) {
+            for (const merchant of merchantsData) {
+              await indexedDBService.update("merchantInfo", merchant);
+            }
+          }
+          if (menuItemsData) {
+            for (const menuItem of menuItemsData) {
+              await indexedDBService.update("menuItems", menuItem);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error initializing data:", error);
       }
-
-      setMerchants(merchantsData || []);
-      setMenuData(menuItemsData || []);
-      setFilteredProducts(menuItemsData || []);
     };
+    console.log("init data");
 
-    fetchData();
+    initializeData();
   }, []);
 
   // Callback untuk menangani pencarian, memastikan fungsi tidak berubah di setiap render

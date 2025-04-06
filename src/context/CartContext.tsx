@@ -6,9 +6,10 @@ import React, {
   ReactNode,
 } from "react";
 import { CartItem, CustomerInfo, MenuItem } from "../types";
-import supabase from "../utils/supabase/client"; // Import Supabase client
+import supabase from "../utils/supabase/client";
 import { isCurrentlyOpen } from "../utils/merchantUtils";
 import { Merchant } from "../types";
+import { indexedDBService } from "../utils/indexedDB";
 
 interface CartContextType {
   cartItems: CartItem[];
@@ -28,9 +29,7 @@ interface CartContextType {
   getMerchantTotal: (merchantId: number) => number;
   getItemCount: () => number;
   getMerchantItems: (merchantId: number) => CartItem[];
-  useMerchantInfo: (
-    merchantId: number
-  ) => { name: string } | null;
+  useMerchantInfo: (merchantId: number) => { name: string } | null;
   getItemQuantity: (itemId: number) => number;
   getSubtotal: () => number;
 }
@@ -42,24 +41,16 @@ interface CartState {
   customerInfo: CustomerInfo;
 }
 
-const CART_STORAGE_KEY = "diorder_cart_state";
+// const CART_STORAGE_KEY = "diorder_cart_state";
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 const getInitialState = (): CartState => {
-  if (typeof window === "undefined")
+  if (typeof window === "undefined") {
     return {
       items: {},
       customerInfo: { name: "", address: "", notes: "" },
     };
-
-  try {
-    const savedState = localStorage.getItem(CART_STORAGE_KEY);
-    if (savedState) {
-      return JSON.parse(savedState);
-    }
-  } catch (error) {
-    console.error("Error parsing cart state from localStorage:", error);
   }
 
   return {
@@ -73,12 +64,53 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
 }) => {
   const [state, setState] = useState<CartState>(getInitialState);
 
+  // Initialize IndexedDB when the component mounts
   useEffect(() => {
-    try {
-      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(state));
-    } catch (error) {
-      console.error("Error saving cart state to localStorage:", error);
-    }
+    const initDB = async () => {
+      try {
+        await indexedDBService.initDB();
+        // Load cart data from IndexedDB
+        const cartItems = await indexedDBService.getCart();
+        if (cartItems.length > 0) {
+          const groupedItems = cartItems.reduce((acc, item) => {
+            if (!acc[item.merchant_id]) {
+              acc[item.merchant_id] = [];
+            }
+            acc[item.merchant_id].push(item);
+            return acc;
+          }, {} as CartState["items"]);
+
+          setState((prev) => ({
+            ...prev,
+            items: groupedItems,
+          }));
+        }
+      } catch (error) {
+        console.error("Error initializing IndexedDB:", error);
+      }
+    };
+    initDB();
+  }, []);
+
+  useEffect(() => {
+    const syncToIndexedDB = async () => {
+      try {
+        // Flatten cart items from all merchants
+        const allItems = Object.entries(state.items).flatMap(
+          ([merchantId, items]) =>
+            items.map((item) => ({ ...item, merchant_id: Number(merchantId) }))
+        );
+
+        // Clear existing cart items and add new ones
+        for (const item of allItems) {
+          await indexedDBService.addToCart(item);
+        }
+      } catch (error) {
+        console.error("Error syncing to IndexedDB:", error);
+      }
+    };
+
+    syncToIndexedDB();
   }, [state]);
 
   const addToCart = (item: MenuItem, merchantId: number) => {
@@ -258,7 +290,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
         }
       };
 
-      fetchMerchant();
+      if (navigator.onLine) fetchMerchant();
     }, [merchantId]);
 
     return merchantInfo;
@@ -278,7 +310,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
 
   useEffect(() => {
     const fetchMerchantsData = async () => {
-      const { data, error } = await supabase.from('merchants').select('*');
+      const { data, error } = await supabase.from("merchants").select("*");
       if (error) {
         console.error("Error fetching merchants data:", error);
         setMerchantsData([]);
@@ -287,7 +319,9 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
       }
     };
 
-    fetchMerchantsData();
+    if (navigator.onLine) {
+      fetchMerchantsData();
+    }
   }, []);
 
   const getSubtotal = () => {

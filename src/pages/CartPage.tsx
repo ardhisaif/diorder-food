@@ -40,7 +40,7 @@ const CartPage: React.FC = () => {
       }
     };
 
-    fetchMerchantsWithItems();
+    if (navigator.onLine) fetchMerchantsWithItems();
   }, [getMerchantItems]);
 
   const formatCurrency = (amount: number) => {

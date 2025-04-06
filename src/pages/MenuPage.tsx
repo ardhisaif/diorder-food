@@ -4,44 +4,101 @@ import { MenuItem as MenuItemType, Merchant } from "../types";
 import MenuItem from "../components/MenuItem";
 import Header from "../components/Header";
 import { useCart } from "../context/CartContext";
-import { ShoppingBag, Clock } from "lucide-react";
+import { ShoppingBag, Clock, WifiOff } from "lucide-react";
 import { isCurrentlyOpen } from "../utils/merchantUtils";
-import supabase from "../utils/supabase/client"; // Import Supabase client
+import supabase from "../utils/supabase/client";
+import { indexedDBService } from "../utils/indexedDB";
 
 const MenuPage: React.FC = () => {
   const { merchantId } = useParams<{ merchantId: string }>();
   const [merchant, setMerchant] = useState<Merchant | null>(null);
   const [menuItems, setMenuItems] = useState<MenuItemType[]>([]);
   const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [isOffline, setIsOffline] = useState<boolean>(!navigator.onLine);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const { getItemCount, getSubtotal } = useCart();
   const navigate = useNavigate();
+  // Monitor online/offline status
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
 
   useEffect(() => {
     const fetchMerchantAndMenu = async () => {
-      const { data: merchantData, error: merchantError } = await supabase
-        .from("merchants")
-        .select("*")
-        .eq("id", Number(merchantId))
-        .single();
+      try {
+        setIsLoading(true);
+        // Initialize IndexedDB
+        await indexedDBService.initDB();
 
-      const { data: menuData, error: menuError } = await supabase
-        .from("menu")
-        .select("*")
-        .eq("merchant_id", Number(merchantId));
-
-      if (merchantError || menuError) {
-        console.error(
-          "Error fetching data from Supabase:",
-          merchantError || menuError
+        // Prioritaskan data dari IndexedDB
+        const cachedMerchants = await indexedDBService.getAll("merchantInfo");
+        const cachedMerchant = cachedMerchants.find(
+          (m) => m.id === Number(merchantId)
         );
-        return;
-      }
 
-      setMerchant(merchantData || null);
-      setMenuItems(menuData || []);
-      setIsOpen(
-        merchantData ? isCurrentlyOpen(merchantData.openingHours) : false
-      );
+        const cachedMenuItems = await indexedDBService.getMenuItems(
+          Number(merchantId)
+        );
+
+        // Set data dari cache terlebih dahulu
+        if (cachedMerchant) {
+          setMerchant(cachedMerchant);
+          setIsOpen(isCurrentlyOpen(cachedMerchant.openingHours));
+        }
+
+        if (cachedMenuItems.length > 0) {
+          setMenuItems(cachedMenuItems);
+          setIsLoading(false);
+        }
+
+        // Jika online, update cache dengan data terbaru dari server
+        if (navigator.onLine) {
+          const [merchantResponse, menuResponse] = await Promise.all([
+            supabase
+              .from("merchants")
+              .select("*")
+              .eq("id", Number(merchantId))
+              .single(),
+            supabase
+              .from("menu")
+              .select("*")
+              .eq("merchant_id", Number(merchantId)),
+          ]);
+
+          const { data: merchantData, error: merchantError } = merchantResponse;
+          const { data: menuData, error: menuError } = menuResponse;
+
+          if (merchantError || menuError) {
+            console.error("Error fetching data:", merchantError || menuError);
+            setIsLoading(false);
+            return;
+          }
+
+          if (merchantData) {
+            setMerchant(merchantData);
+            setIsOpen(isCurrentlyOpen(merchantData.openingHours));
+            await indexedDBService.update("merchantInfo", merchantData);
+          }
+
+          if (menuData) {
+            setMenuItems(menuData);
+            await indexedDBService.cacheMenuItems(menuData, Number(merchantId));
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     fetchMerchantAndMenu();
@@ -58,7 +115,7 @@ const MenuPage: React.FC = () => {
     return () => clearInterval(intervalId);
   }, [merchant]);
 
-  if (!merchant) {
+  if (isLoading) {
     return (
       <div className="h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-10 w-10 border-t-4 border-orange-500 border-solid"></div>
@@ -88,17 +145,26 @@ const MenuPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 pb-32">
-      <Header title={merchant.name} showBack />
+      <Header title={merchant?.name || ""} showBack />
 
       <div className="container mx-auto px-4 py-6">
+        {isOffline && (
+          <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4 flex items-center">
+            <WifiOff size={20} className="mr-2" />
+            <span>
+              Anda sedang offline. Data yang ditampilkan adalah data terakhir
+              yang tersimpan.
+            </span>
+          </div>
+        )}
         <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-          <h2 className="font-bold text-lg">{merchant.name}</h2>
-          <p className="text-gray-600 text-sm">{merchant.address}</p>
+          <h2 className="font-bold text-lg">{merchant?.name}</h2>
+          <p className="text-gray-600 text-sm">{merchant?.address}</p>
           <div className="flex items-center mt-2">
             <Clock size={16} className="mr-1" />
             <span className={isOpen ? "text-green-600" : "text-red-600"}>
-              {isOpen ? "Buka" : "Tutup"} • {merchant.openingHours.open} -{" "}
-              {merchant.openingHours.close}
+              {isOpen ? "Buka" : "Tutup"} • {merchant?.openingHours.open} -{" "}
+              {merchant?.openingHours?.close}
             </span>
           </div>
         </div>
@@ -110,7 +176,7 @@ const MenuPage: React.FC = () => {
               <MenuItem
                 key={item.id}
                 item={item}
-                merchantId={merchant.id}
+                merchantId={merchant?.id ?? 0}
                 isOpen={isOpen}
               />
             ))}
