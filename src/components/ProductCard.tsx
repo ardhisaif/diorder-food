@@ -59,7 +59,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
     >
       <div className="flex">
         <img
-          src={item.image}
+          src={item.image.startsWith("http") ? item.image : "/placeholder.svg"}
           alt={item.name}
           className="w-24 h-24 object-cover"
         />

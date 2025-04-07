@@ -16,7 +16,7 @@ const MerchantCard: React.FC<MerchantCardProps> = ({ merchant }) => {
       <Link to={`/menu/${merchant.id}`}>
         <div className="flex p-3">
           <img
-            src={merchant.logo}
+            src={merchant.logo.startsWith("http") ? merchant.logo : "/placeholder.svg"}
             alt={merchant.name}
             className={`w-20 h-20 rounded-lg object-cover ${
               !isOpen ? "grayscale" : ""

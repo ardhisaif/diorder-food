@@ -26,7 +26,7 @@ const CartItem: React.FC<CartItemProps> = ({ item, merchantId }) => {
   return (
     <div className="flex items-center py-4 border-b">
       <img
-        src={item.image}
+        src={item.image.startsWith("http") ? item.image : "/placeholder.svg"}
         alt={item.name}
         className="w-16 h-16 object-cover rounded-md"
       />
