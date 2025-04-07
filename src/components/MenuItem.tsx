@@ -22,11 +22,14 @@ const MenuItem: React.FC<MenuItemProps> = ({ item, merchantId, isOpen }) => {
   };
 
   return (
-    <div className={`bg-white rounded-lg shadow-md overflow-hidden mb-4 ${!isOpen ? 'grayscale' : ''}`}>
+    <div
+      className={`bg-white rounded-lg shadow-md overflow-hidden mb-4 ${
+        !isOpen ? "grayscale" : ""
+      }`}
+    >
       <div className="flex">
         <img
-          src={item.image}
-          alt={item.name}
+          src={item.image.startsWith("http") ? item.image : "/placeholder.svg"}
           className="w-24 h-24 object-cover"
         />
         <div className="p-3 flex-1">
