@@ -1,4 +1,3 @@
-
 <div align="center">
   <h1>Diorder - Pesan Makanan Online</h1>
 </div>
@@ -15,7 +14,6 @@
 - **Checkout via WhatsApp**: Mengirim detail pesanan langsung ke kurir melalui WhatsApp.
 - **Status Merchant**: Menampilkan status buka/tutup merchant berdasarkan jam operasional.
 - **Pencarian**: Fitur pencarian untuk menemukan makanan, minuman, atau merchant dengan cepat.
-
 
 <!-- ## **Diorder vs Kompetitor** -->
 <br>
@@ -257,6 +255,160 @@ Menampilkan item yang ditambahkan ke keranjang dengan opsi checkout.
 
 <img src="halaman-keranjang1.png" alt="Halaman Keranjang 1" width="300">
 <img src="halaman-keranjang2.png" alt="Halaman Keranjang 2" width="300">
+
+<br>
+<br>
+<br>
+
+<div align="center">
+  <h2>🚀 Strategi Pengembangan Bisnis Bertahap 🚀</h2>
+  <p><i>Monetisasi yang adil dan tidak membebani pengguna</i></p>
+</div>
+
+<p align="center">
+  <img src="https://img.icons8.com/fluency/96/business-growth.png" width="100"/>
+</p>
+
+Diorder dirancang dengan pendekatan bertumbuh bersama - membangun ekosistem yang menguntungkan bagi semua pihak tanpa menaikkan biaya kepada pengguna secara signifikan.
+
+### 📈 **Fase Pengembangan Bisnis**
+
+<table>
+  <tr>
+    <th align="center">Fase</th>
+    <th align="center">Fokus</th>
+    <th align="center">Strategi Monetisasi</th>
+  </tr>
+  <tr>
+    <td align="center"><b>Fase 1</b><br/><i>0-6 bulan</i><br/>🌱 Tumbuh</td>
+    <td>
+      <ul>
+        <li>Membangun basis pengguna awal</li>
+        <li>Meningkatkan awareness di Duduksampeyan</li>
+        <li>Menjalin kemitraan dengan restoran lokal</li>
+      </ul>
+    </td>
+    <td>
+      <ul>
+        <li>Zero profit model - fokus pada pertumbuhan</li>
+        <li>Hanya mengambil Rp 1.000 dari setiap ongkir</li>
+        <li>Target: 1.000 pesanan/bulan</li>
+      </ul>
+    </td>
+  </tr>
+  <tr>
+    <td align="center"><b>Fase 2</b><br/><i>6-12 bulan</i><br/>🌿 Monetisasi Ringan</td>
+    <td>
+      <ul>
+        <li>Optimalisasi tanpa menaikkan harga</li>
+        <li>Peningkatan layanan merchant</li>
+        <li>Penambahan fitur berbasis feedback</li>
+      </ul>
+    </td>
+    <td>
+      <ul>
+        <li>Komisi merchant 5% (bukan dari pengguna)</li>
+        <li>Layanan pengiriman prioritas (+Rp 2.000, opsional)</li>
+        <li>Program merchant premium (Rp 50-100rb/bulan)</li>
+      </ul>
+    </td>
+  </tr>
+  <tr>
+    <td align="center"><b>Fase 3</b><br/><i>12-24 bulan</i><br/>🌳 Ekspansi</td>
+    <td>
+      <ul>
+        <li>Ekspansi ke kecamatan sekitar</li>
+        <li>Diversifikasi layanan</li>
+        <li>Program loyalitas pengguna</li>
+      </ul>
+    </td>
+    <td>
+      <ul>
+        <li>Diorder+ Membership opsional (Rp 15rb/bulan)</li>
+        <li>Program "Diorder untuk Bisnis" (katering kantor)</li>
+        <li>Fitur pre-order dan reservasi</li>
+      </ul>
+    </td>
+  </tr>
+  <tr>
+    <td align="center"><b>Fase 4</b><br/><i>24+ bulan</i><br/>🌲 Ekosistem</td>
+    <td>
+      <ul>
+        <li>Solusi lokal komprehensif</li>
+        <li>Integrasi dengan UMKM lokal</li>
+        <li>Pengembangan komunitas pengguna</li>
+      </ul>
+    </td>
+    <td>
+      <ul>
+        <li>Diorder Hub - marketplace UMKM lokal</li>
+        <li>Solusi B2B untuk bisnis dan acara</li>
+        <li>Opsi white label untuk restoran</li>
+      </ul>
+    </td>
+  </tr>
+</table>
+
+### 💎 **Prinsip Monetisasi Berkelanjutan**
+
+<div style="display: flex; justify-content: space-between; flex-wrap: wrap;">
+  <div style="flex: 1; min-width: 250px; margin: 10px; padding: 15px; border-radius: 10px; background-color: #f8f9fa; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+    <h4 style="color: #2e7d32; margin-top: 0;">✅ Transparansi Harga</h4>
+    <p style="color: #333333; font-weight: 500;">Tetap mempertahankan tidak ada markup harga menu</p>
+  </div>
+  <div style="flex: 1; min-width: 250px; margin: 10px; padding: 15px; border-radius: 10px; background-color: #f8f9fa; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+    <h4 style="color: #1565c0; margin-top: 0;">✅ Value-First Approach</h4>
+    <p style="color: #333333; font-weight: 500;">Setiap fitur berbayar memberikan nilai jelas bagi pengguna</p>
+  </div>
+  <div style="flex: 1; min-width: 250px; margin: 10px; padding: 15px; border-radius: 10px; background-color: #f8f9fa; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+    <h4 style="color: #6a1b9a; margin-top: 0;">✅ Pilihan Pengguna</h4>
+    <p style="color: #333333; font-weight: 500;">Semua fitur premium bersifat opsional</p>
+  </div>
+  <div style="flex: 1; min-width: 250px; margin: 10px; padding: 15px; border-radius: 10px; background-color: #f8f9fa; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+    <h4 style="color: #c62828; margin-top: 0;">✅ Pertumbuhan Bersama</h4>
+    <p style="color: #333333; font-weight: 500;">Berbagi keuntungan dengan merchant melalui peningkatan penjualan</p>
+  </div>
+  <div style="flex: 1; min-width: 250px; margin: 10px; padding: 15px; border-radius: 10px; background-color: #f8f9fa; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+    <h4 style="color: #e65100; margin-top: 0;">✅ Reinvestasi</h4>
+    <p style="color: #333333; font-weight: 500;">30% keuntungan awal diinvestasikan kembali untuk pengembangan</p>
+  </div>
+</div>
+
+<!-- ### 📊 **Proyeksi Pendapatan Bertahap**
+
+<div align="center">
+  <table>
+    <tr>
+      <th width="15%">Fase</th>
+      <th width="40%">Sumber Pendapatan</th>
+      <th width="45%">Estimasi/Bulan</th>
+    </tr>
+    <tr>
+      <td align="center">1️⃣</td>
+      <td>Porsi Ongkir (Rp 1.000/pesanan)</td>
+      <td align="right">Rp 1.000.000 <small><i>(1.000 pesanan)</i></small></td>
+    </tr>
+    <tr>
+      <td align="center">2️⃣</td>
+      <td>Porsi Ongkir + Komisi Merchant + Layanan Premium</td>
+      <td align="right">Rp 3.000.000 - 5.000.000</td>
+    </tr>
+    <tr>
+      <td align="center">3️⃣</td>
+      <td>Semua sumber di atas + Membership + Ekspansi</td>
+      <td align="right">Rp 10.000.000 - 15.000.000</td>
+    </tr>
+    <tr>
+      <td align="center">4️⃣</td>
+      <td>Ekosistem lengkap dengan multiple revenue streams</td>
+      <td align="right">Rp 25.000.000+</td>
+    </tr>
+  </table>
+</div> -->
+
+<div align="center">
+  <p><b>Diorder</b> - Bertumbuh bersama komunitas, mengutamakan nilai, dan membangun ekosistem lokal yang berkelanjutan.</p>
+</div>
 
 ---
 
