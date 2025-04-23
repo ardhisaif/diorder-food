@@ -287,7 +287,7 @@ const CartPage: React.FC = () => {
                     />
                   ))}
 
-                  <div className="mt-4 pt-4 border-t">
+                  <div className="mt-4 pt-4">
                     <div className="flex justify-between mb-2">
                       <span>Subtotal</span>
                       <span className="font-bold">

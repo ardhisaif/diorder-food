@@ -17,7 +17,7 @@ const MerchantCard: React.FC<MerchantCardProps> = ({ merchant }) => {
         <div className="flex p-3">
           <img
             src={merchant.logo.startsWith("http") ? merchant.logo : "/placeholder.svg"}
-            alt={merchant.name}
+            alt=""
             className={`w-20 h-20 rounded-lg object-cover ${
               !isOpen ? "grayscale" : ""
             }`}
