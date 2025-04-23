@@ -6,18 +6,21 @@ import React, {
   TouchEvent,
 } from "react";
 import { Merchant, MenuItem } from "../types";
-import MerchantCard from "../components/MerchantCard";
+import MerchantCardOrig from "../components/MerchantCard";
 import Header from "../components/Header";
 import SearchBar from "../components/SearchBar";
-import ProductCard from "../components/ProductCard";
+import ProductCardOrig from "../components/ProductCard";
 import { ShoppingBag } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { useNavigate } from "react-router-dom";
 import { isCurrentlyOpen } from "../utils/merchantUtils";
-import supabase from "../utils/supabase/client"; // Import Supabase client
+import supabase from "../utils/supabase/client";
 import { indexedDBService } from "../utils/indexedDB";
 
-// Fungsi untuk format mata uang, dipindahkan ke luar agar tidak dideklarasikan ulang
+// Memoized components
+const MerchantCard = React.memo(MerchantCardOrig);
+const ProductCard = React.memo(ProductCardOrig);
+
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("id-ID", {
     style: "currency",
@@ -28,7 +31,6 @@ const formatCurrency = (amount: number) => {
 
 const HomePage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [filteredProducts, setFilteredProducts] = useState<MenuItem[]>([]);
   const [activeTab, setActiveTab] = useState<
     "merchants" | "makanan" | "minuman"
   >("merchants");
@@ -36,11 +38,9 @@ const HomePage: React.FC = () => {
   const [menuData, setMenuData] = useState<MenuItem[]>([]);
   const { getItemCount, getSubtotal } = useCart();
   const navigate = useNavigate();
-  // State untuk swipe gesture
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
-  // Minimal swipe distance (dalam px)
   const minSwipeDistance = 50;
 
   const totalItems = getItemCount();
@@ -50,15 +50,12 @@ const HomePage: React.FC = () => {
     const initializeData = async () => {
       try {
         await indexedDBService.initDB();
-
-        // Coba ambil data dari IndexedDB terlebih dahulu
         const cachedMerchants = await indexedDBService.getAll("merchantInfo");
         const cachedMenu = await indexedDBService.getAll("menuItems");
 
         if (cachedMerchants.length > 0 && cachedMenu.length > 0) {
           setMerchants(cachedMerchants);
           setMenuData(cachedMenu);
-          setFilteredProducts(cachedMenu);
         }
 
         if (navigator.onLine) {
@@ -68,10 +65,6 @@ const HomePage: React.FC = () => {
           const { data: menuItemsData, error: menuError } = await supabase
             .from("menu")
             .select("*");
-          console.log("Data from IndexedDB:", {
-            cachedMerchants,
-            merchantsData,
-          });
           if (merchantsError || menuError) {
             console.error(
               "Error fetching data from Supabase:",
@@ -79,12 +72,8 @@ const HomePage: React.FC = () => {
             );
             return;
           }
-
-          // Simpan data ke state
           setMerchants(merchantsData || []);
           setMenuData(menuItemsData || []);
-          setFilteredProducts(menuItemsData || []);
-          // Simpan data ke IndexedDB
           if (merchantsData) {
             for (const merchant of merchantsData) {
               await indexedDBService.update("merchantInfo", merchant);
@@ -100,32 +89,19 @@ const HomePage: React.FC = () => {
         console.error("Error initializing data:", error);
       }
     };
-    console.log("init data");
-
     initializeData();
   }, []);
 
-  // Callback untuk menangani pencarian, memastikan fungsi tidak berubah di setiap render
-  const handleSearch = useCallback(
-    (query: string) => {
-      setSearchQuery(query);
-
-      if (!query.trim()) {
-        setFilteredProducts(menuData);
-        return;
-      }
-
-      const normalizedQuery = query.toLowerCase();
-      const results = menuData.filter(
-        (item) =>
-          item.name.toLowerCase().includes(normalizedQuery) ||
-          item.category.toLowerCase().includes(normalizedQuery)
-      );
-
-      setFilteredProducts(results);
-    },
-    [menuData]
-  );
+  // Filtered products by search query
+  const filteredProducts = useMemo(() => {
+    if (!searchQuery.trim()) return menuData;
+    const normalizedQuery = searchQuery.toLowerCase();
+    return menuData.filter(
+      (item) =>
+        item.name.toLowerCase().includes(normalizedQuery) ||
+        item.category.toLowerCase().includes(normalizedQuery)
+    );
+  }, [menuData, searchQuery]);
 
   // Find merchant name by id
   const getMerchantName = useCallback(
@@ -136,24 +112,19 @@ const HomePage: React.FC = () => {
     [merchants]
   );
 
-  // Sort merchants by open status
+  // Sort merchants by open status (avoid mutating original array)
   const sortedMerchants = useMemo(() => {
-    return merchants.sort((a, b) => {
+    return merchants.slice().sort((a, b) => {
       const isOpenA = a.openingHours ? isCurrentlyOpen(a.openingHours) : false;
       const isOpenB = b.openingHours ? isCurrentlyOpen(b.openingHours) : false;
-      // First sort by open status
-      if (isOpenA !== isOpenB) {
-        return isOpenA ? -1 : 1;
-      }
-      // Then sort by name as secondary criteria for consistency
-      return a.name.localeCompare(b.name);
+      return isOpenA === isOpenB ? 0 : isOpenA ? -1 : 1;
     });
   }, [merchants]);
 
-  // Sort products by merchant open status
+  // Sort products by merchant open status (avoid mutating original array)
   const sortProductsByMerchantOpenStatus = useCallback(
     (products: MenuItem[]) => {
-      return products.sort((a, b) => {
+      return products.slice().sort((a, b) => {
         const merchantA = merchants.find((m) => m.id === a.merchant_id);
         const merchantB = merchants.find((m) => m.id === b.merchant_id);
         const isOpenA = merchantA?.openingHours
@@ -162,19 +133,7 @@ const HomePage: React.FC = () => {
         const isOpenB = merchantB?.openingHours
           ? isCurrentlyOpen(merchantB.openingHours)
           : false;
-
-        // First sort by merchant open status
-        if (isOpenA !== isOpenB) {
-          return isOpenA ? -1 : 1;
-        }
-
-        // Then sort by merchant name
-        if (merchantA && merchantB && merchantA.name !== merchantB.name) {
-          return merchantA.name.localeCompare(merchantB.name);
-        }
-
-        // Finally sort by product name for consistency
-        return a.name.localeCompare(b.name);
+        return isOpenA === isOpenB ? 0 : isOpenA ? -1 : 1;
       });
     },
     [merchants]
@@ -195,53 +154,38 @@ const HomePage: React.FC = () => {
     return sortProductsByMerchantOpenStatus(minuman);
   }, [filteredProducts, sortProductsByMerchantOpenStatus]);
 
-  // Update filteredProducts when searchQuery changes
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setFilteredProducts(menuData);
-    }
-  }, [searchQuery, menuData]);
+  // Handle search
+  const handleSearch = useCallback((query: string) => {
+    setSearchQuery(query);
+  }, []);
 
   // Handle touch start
-  const handleTouchStart = (e: TouchEvent) => {
-    setTouchEnd(null); // reset touchEnd
+  const handleTouchStart = useCallback((e: TouchEvent) => {
+    setTouchEnd(null);
     setTouchStart(e.targetTouches[0].clientX);
-  };
+  }, []);
 
   // Handle touch move
-  const handleTouchMove = (e: TouchEvent) => {
+  const handleTouchMove = useCallback((e: TouchEvent) => {
     setTouchEnd(e.targetTouches[0].clientX);
-  };
+  }, []);
 
   // Handle touch end
-  const handleTouchEnd = () => {
+  const handleTouchEnd = useCallback(() => {
     if (!touchStart || !touchEnd) return;
-
     const distance = touchStart - touchEnd;
     const isLeftSwipe = distance > minSwipeDistance;
     const isRightSwipe = distance < -minSwipeDistance;
-
-    // Swipe right to left (merchants -> makanan -> minuman)
     if (isLeftSwipe) {
-      if (activeTab === "merchants") {
-        setActiveTab("makanan");
-      } else if (activeTab === "makanan") {
-        setActiveTab("minuman");
-      }
+      if (activeTab === "merchants") setActiveTab("makanan");
+      else if (activeTab === "makanan") setActiveTab("minuman");
+    } else if (isRightSwipe) {
+      if (activeTab === "minuman") setActiveTab("makanan");
+      else if (activeTab === "makanan") setActiveTab("merchants");
     }
-    // Swipe left to right (minuman -> makanan -> merchants)
-    else if (isRightSwipe) {
-      if (activeTab === "minuman") {
-        setActiveTab("makanan");
-      } else if (activeTab === "makanan") {
-        setActiveTab("merchants");
-      }
-    }
-
-    // Reset touch values
     setTouchStart(null);
     setTouchEnd(null);
-  };
+  }, [touchStart, touchEnd, activeTab]);
 
   return (
     <div className="min-h-screen bg-gray-100 pb-24">
