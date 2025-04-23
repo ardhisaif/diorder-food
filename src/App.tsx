@@ -1,5 +1,6 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { CartProvider } from "./context/CartContext";
+import { SettingsProvider } from "./context/SettingsContext";
 import HomePage from "./pages/HomePage";
 import MenuPage from "./pages/MenuPage";
 import CartPage from "./pages/CartPage";
@@ -20,11 +21,13 @@ const router = createBrowserRouter(
 
 function App() {
   return (
-    <CartProvider>
-      <div className="max-w-md mx-auto min-h-screen bg-gray-100 shadow-lg">
-        <RouterProvider router={router} />
-      </div>
-    </CartProvider>
+    <SettingsProvider>
+      <CartProvider>
+        <div className="max-w-md mx-auto min-h-screen bg-gray-100 shadow-lg">
+          <RouterProvider router={router} />
+        </div>
+      </CartProvider>
+    </SettingsProvider>
   );
 }
 

@@ -1,6 +1,7 @@
 import React from "react";
 import { MenuItem as MenuItemType } from "../types";
 import { useCart } from "../context/CartContext";
+import { useSettings } from "../context/SettingsContext";
 import { Plus, Minus, Clock } from "lucide-react";
 
 interface MenuItemProps {
@@ -11,7 +12,11 @@ interface MenuItemProps {
 
 const MenuItem: React.FC<MenuItemProps> = ({ item, merchantId, isOpen }) => {
   const { addToCart, removeFromCart, getItemQuantity } = useCart();
+  const { isServiceOpen } = useSettings();
   const quantity = getItemQuantity(item.id);
+
+  // Combined status - both merchant must be open and overall service must be open
+  const isAvailable = isOpen && isServiceOpen;
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -24,7 +29,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ item, merchantId, isOpen }) => {
   return (
     <div
       className={`bg-white rounded-lg shadow-md overflow-hidden mb-4 ${
-        !isOpen ? "grayscale" : ""
+        !isAvailable ? "grayscale" : ""
       }`}
     >
       <div className="flex">
@@ -42,6 +47,11 @@ const MenuItem: React.FC<MenuItemProps> = ({ item, merchantId, isOpen }) => {
               <div className="text-red-600 text-sm flex items-center">
                 <Clock size={14} className="mr-1" />
                 <span>Tutup</span>
+              </div>
+            ) : !isServiceOpen ? (
+              <div className="text-red-600 text-sm flex items-center">
+                <Clock size={14} className="mr-1" />
+                <span>Layanan Tutup</span>
               </div>
             ) : (
               <div className="flex items-center">

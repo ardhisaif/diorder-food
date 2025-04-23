@@ -12,10 +12,12 @@ import SearchBar from "../components/SearchBar";
 import ProductCardOrig from "../components/ProductCard";
 import { ShoppingBag } from "lucide-react";
 import { useCart } from "../context/CartContext";
+import { useSettings } from "../context/SettingsContext";
 import { useNavigate } from "react-router-dom";
 import { isCurrentlyOpen } from "../utils/merchantUtils";
 import supabase from "../utils/supabase/client";
 import { indexedDBService } from "../utils/indexedDB";
+import ServiceClosedBanner from "../components/ServiceClosedBanner";
 
 // Memoized components
 const MerchantCard = React.memo(MerchantCardOrig);
@@ -37,6 +39,7 @@ const HomePage: React.FC = () => {
   const [merchants, setMerchants] = useState<Merchant[]>([]);
   const [menuData, setMenuData] = useState<MenuItem[]>([]);
   const { getItemCount, getSubtotal } = useCart();
+  const { isServiceOpen } = useSettings();
   const navigate = useNavigate();
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
@@ -190,6 +193,7 @@ const HomePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-100 pb-24">
       <Header title="diorder" />
+      {!isServiceOpen && <ServiceClosedBanner className="mx-4 mt-4" />}
       <main
         className="container mx-auto px-4 py-6"
         onTouchStart={handleTouchStart}
@@ -290,7 +294,7 @@ const HomePage: React.FC = () => {
         </div>
       </main>
 
-      {totalItems > 0 && totalAmount > 0 && (
+      {totalItems > 0 && totalAmount > 0 && isServiceOpen && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4">
           <div className="container mx-auto max-w-md">
             <div className="flex justify-between items-center">

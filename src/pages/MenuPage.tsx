@@ -4,10 +4,12 @@ import { MenuItem as MenuItemType, Merchant } from "../types";
 import MenuItem from "../components/MenuItem";
 import Header from "../components/Header";
 import { useCart } from "../context/CartContext";
+import { useSettings } from "../context/SettingsContext";
 import { ShoppingBag, Clock, WifiOff } from "lucide-react";
 import { isCurrentlyOpen } from "../utils/merchantUtils";
 import supabase from "../utils/supabase/client";
 import { indexedDBService } from "../utils/indexedDB";
+import ServiceClosedBanner from "../components/ServiceClosedBanner";
 
 const MenuPage: React.FC = () => {
   const { merchantId } = useParams<{ merchantId: string }>();
@@ -17,6 +19,7 @@ const MenuPage: React.FC = () => {
   const [isOffline, setIsOffline] = useState<boolean>(!navigator.onLine);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const { getItemCount, getSubtotal } = useCart();
+  const { isServiceOpen } = useSettings();
   const navigate = useNavigate();
   // Monitor online/offline status
   useEffect(() => {
@@ -147,6 +150,8 @@ const MenuPage: React.FC = () => {
     <div className="min-h-screen bg-gray-100 pb-32">
       <Header title={merchant?.name || ""} showBack />
 
+      {!isServiceOpen && <ServiceClosedBanner className="mx-4 mt-4" />}
+
       <div className="container mx-auto px-4 py-6">
         {isOffline && (
           <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4 flex items-center">
@@ -177,14 +182,14 @@ const MenuPage: React.FC = () => {
                 key={item.id}
                 item={item}
                 merchantId={merchant?.id ?? 0}
-                isOpen={isOpen}
+                isOpen={isOpen && isServiceOpen}
               />
             ))}
           </div>
         ))}
       </div>
 
-      {itemCount > 0 && totalAmount > 0 && (
+      {itemCount > 0 && totalAmount > 0 && isServiceOpen && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4">
           <div className="container mx-auto max-w-md">
             <div className="flex justify-between items-center mb-2">

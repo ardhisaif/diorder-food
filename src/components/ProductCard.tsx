@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { MenuItem } from "../types";
 import { Plus, Minus, Info, Clock } from "lucide-react";
 import { useCart } from "../context/CartContext";
+import { useSettings } from "../context/SettingsContext";
 import { Link } from "react-router-dom";
 import { isCurrentlyOpen } from "../utils/merchantUtils";
 import supabase from "../utils/supabase/client";
@@ -19,6 +20,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   merchantName,
 }) => {
   const { addToCart, removeFromCart, getItemQuantity } = useCart();
+  const { isServiceOpen } = useSettings();
   const quantity = getItemQuantity(item.id);
   const [merchant, setMerchant] = useState<Merchant | null>(null);
 
@@ -41,7 +43,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
     if (navigator.onLine) fetchMerchant();
   }, [merchantId]);
 
-  const isOpen = merchant ? isCurrentlyOpen(merchant.openingHours) : false;
+  const isOpen = merchant
+    ? isCurrentlyOpen(merchant.openingHours) && isServiceOpen
+    : false;
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("id-ID", {
