@@ -132,6 +132,14 @@ const MenuPage: React.FC = () => {
     menuByCategory[item.category].push(item);
   });
 
+  // Sort items within each category by name for consistency
+  Object.keys(menuByCategory).forEach((category) => {
+    menuByCategory[category].sort((a, b) => a.name.localeCompare(b.name));
+  });
+
+  // Sort categories for consistent order
+  const sortedCategories = Object.keys(menuByCategory).sort();
+
   const itemCount = getItemCount();
   const totalAmount = getSubtotal();
 
@@ -169,10 +177,10 @@ const MenuPage: React.FC = () => {
           </div>
         </div>
 
-        {Object.entries(menuByCategory).map(([category, items]) => (
+        {sortedCategories.map((category) => (
           <div key={category} className="mb-6">
             <h3 className="text-lg font-bold mb-3">{category}</h3>
-            {items.map((item) => (
+            {menuByCategory[category].map((item) => (
               <MenuItem
                 key={item.id}
                 item={item}

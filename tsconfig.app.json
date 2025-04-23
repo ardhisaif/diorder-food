@@ -17,5 +17,6 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src","node_modules/vite-plugin-pwa/client.d.ts"]
+  "include": ["src","node_modules/vite-plugin-pwa/client.d.ts"],
+  "exclude": ["src/hooks/useMerchant.ts"]
 }

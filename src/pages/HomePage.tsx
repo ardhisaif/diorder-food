@@ -141,7 +141,12 @@ const HomePage: React.FC = () => {
     return merchants.sort((a, b) => {
       const isOpenA = a.openingHours ? isCurrentlyOpen(a.openingHours) : false;
       const isOpenB = b.openingHours ? isCurrentlyOpen(b.openingHours) : false;
-      return isOpenA === isOpenB ? 0 : isOpenA ? -1 : 1;
+      // First sort by open status
+      if (isOpenA !== isOpenB) {
+        return isOpenA ? -1 : 1;
+      }
+      // Then sort by name as secondary criteria for consistency
+      return a.name.localeCompare(b.name);
     });
   }, [merchants]);
 
@@ -157,7 +162,19 @@ const HomePage: React.FC = () => {
         const isOpenB = merchantB?.openingHours
           ? isCurrentlyOpen(merchantB.openingHours)
           : false;
-        return isOpenA === isOpenB ? 0 : isOpenA ? -1 : 1;
+
+        // First sort by merchant open status
+        if (isOpenA !== isOpenB) {
+          return isOpenA ? -1 : 1;
+        }
+
+        // Then sort by merchant name
+        if (merchantA && merchantB && merchantA.name !== merchantB.name) {
+          return merchantA.name.localeCompare(merchantB.name);
+        }
+
+        // Finally sort by product name for consistency
+        return a.name.localeCompare(b.name);
       });
     },
     [merchants]
