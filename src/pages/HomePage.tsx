@@ -137,6 +137,17 @@ const HomePage: React.FC = () => {
     [merchants]
   );
 
+  // Add this function to determine if a merchant is open
+  const isMerchantOpen = useCallback(
+    (merchantId: number): boolean => {
+      const merchant = merchants.find((m) => m.id === merchantId);
+      return merchant
+        ? isCurrentlyOpen(merchant.openingHours) && isServiceOpen
+        : false;
+    },
+    [merchants, isServiceOpen]
+  );
+
   // Sort merchants by open status (avoid mutating original array)
   const sortedMerchants = useMemo(() => {
     return merchants.slice().sort((a, b) => {
@@ -309,6 +320,7 @@ const HomePage: React.FC = () => {
                       item={product}
                       merchantId={product.merchant_id}
                       merchantName={getMerchantName(product.merchant_id)}
+                      isOpen={isMerchantOpen(product.merchant_id)}
                     />
                   ))}
                 </div>
@@ -336,6 +348,7 @@ const HomePage: React.FC = () => {
                       item={product}
                       merchantId={product.merchant_id}
                       merchantName={getMerchantName(product.merchant_id)}
+                      isOpen={isMerchantOpen(product.merchant_id)}
                     />
                   ))}
                 </div>

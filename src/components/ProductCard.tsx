@@ -1,60 +1,25 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { MenuItem } from "../types";
 import { Plus, Minus, Info, Clock } from "lucide-react";
 import { useCart } from "../context/CartContext";
-import { useSettings } from "../context/SettingsContext";
 import { Link } from "react-router-dom";
-import { isCurrentlyOpen } from "../utils/merchantUtils";
-import supabase from "../utils/supabase/client";
-import { Merchant } from "../types";
 import LazyImage from "./LazyImage";
 
 interface ProductCardProps {
   item: MenuItem;
   merchantId: number;
   merchantName: string;
+  isOpen?: boolean; // Add this prop
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({
   item,
   merchantId,
   merchantName,
+  isOpen = false, // Default to false if not provided
 }) => {
   const { addToCart, removeFromCart, getItemQuantity } = useCart();
-  const { isServiceOpen } = useSettings();
   const quantity = getItemQuantity(item.id);
-  const [merchant, setMerchant] = useState<Merchant | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    const fetchMerchant = async () => {
-      try {
-        setIsLoading(true);
-        const { data, error } = await supabase
-          .from("merchants")
-          .select("*")
-          .eq("id", merchantId)
-          .single();
-
-        if (error) {
-          console.error("Error fetching merchant:", error);
-          setMerchant(null);
-        } else {
-          setMerchant(data);
-        }
-      } catch (error) {
-        console.error("Error fetching merchant data:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (navigator.onLine) fetchMerchant();
-  }, [merchantId]);
-
-  const isOpen = merchant
-    ? isCurrentlyOpen(merchant.openingHours) && isServiceOpen
-    : false;
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -104,7 +69,6 @@ const ProductCard: React.FC<ProductCardProps> = ({
                         ? "bg-orange-500 text-white"
                         : "bg-gray-200 text-gray-400"
                     }`}
-                    disabled={isLoading}
                   >
                     <Minus size={14} />
                   </button>
@@ -114,7 +78,6 @@ const ProductCard: React.FC<ProductCardProps> = ({
                 <button
                   onClick={() => addToCart(item, merchantId)}
                   className="w-6 h-6 flex items-center justify-center bg-orange-500 text-white rounded-full"
-                  disabled={isLoading}
                 >
                   <Plus size={14} />
                 </button>
