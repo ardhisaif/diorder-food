@@ -11,6 +11,9 @@ import { isCurrentlyOpen } from "../utils/merchantUtils";
 import { Merchant } from "../types";
 import { indexedDBService } from "../utils/indexedDB";
 
+// Add a constant for localStorage key
+const CUSTOMER_INFO_STORAGE_KEY = "diorder_customer_info";
+
 interface CartContextType {
   cartItems: CartItem[];
   addToCart: (item: MenuItem, merchantId: number) => void;
@@ -41,8 +44,6 @@ interface CartState {
   customerInfo: CustomerInfo;
 }
 
-// const CART_STORAGE_KEY = "diorder_cart_state";
-
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 const getInitialState = (): CartState => {
@@ -53,9 +54,20 @@ const getInitialState = (): CartState => {
     };
   }
 
+  // Try to get customer info from localStorage
+  let savedCustomerInfo: CustomerInfo = { name: "", address: "", notes: "" };
+  try {
+    const savedInfo = localStorage.getItem(CUSTOMER_INFO_STORAGE_KEY);
+    if (savedInfo) {
+      savedCustomerInfo = JSON.parse(savedInfo);
+    }
+  } catch (error) {
+    console.error("Error reading customer info from localStorage:", error);
+  }
+
   return {
     items: {},
-    customerInfo: { name: "", address: "", notes: "" },
+    customerInfo: savedCustomerInfo,
   };
 };
 
@@ -112,6 +124,20 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
 
     syncToIndexedDB();
   }, [state]);
+
+  // Effect to save customer info to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(
+          CUSTOMER_INFO_STORAGE_KEY,
+          JSON.stringify(state.customerInfo)
+        );
+      } catch (error) {
+        console.error("Error saving customer info to localStorage:", error);
+      }
+    }
+  }, [state.customerInfo]);
 
   const addToCart = (item: MenuItem, merchantId: number) => {
     setState((prevState) => {
@@ -236,6 +262,15 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
       ...prevState,
       customerInfo: info,
     }));
+
+    // This is redundant due to the useEffect above, but adding as a safeguard
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(CUSTOMER_INFO_STORAGE_KEY, JSON.stringify(info));
+      } catch (error) {
+        console.error("Error saving customer info to localStorage:", error);
+      }
+    }
   };
 
   const getCartTotal = () => {
