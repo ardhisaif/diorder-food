@@ -10,7 +10,7 @@ import MerchantCardOrig from "../components/MerchantCard";
 import Header from "../components/Header";
 import SearchBar from "../components/SearchBar";
 import ProductCardOrig from "../components/ProductCard";
-import { ShoppingBag } from "lucide-react";
+import { ShoppingBag, WifiOff } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { useSettings } from "../context/SettingsContext";
 import { useNavigate } from "react-router-dom";
@@ -18,6 +18,7 @@ import { isCurrentlyOpen } from "../utils/merchantUtils";
 import supabase from "../utils/supabase/client";
 import { indexedDBService } from "../utils/indexedDB";
 import ServiceClosedBanner from "../components/ServiceClosedBanner";
+import { MerchantSkeleton, ProductSkeleton } from "../components/Skeletons";
 
 // Memoized components
 const MerchantCard = React.memo(MerchantCardOrig);
@@ -38,6 +39,8 @@ const HomePage: React.FC = () => {
   >("merchants");
   const [merchants, setMerchants] = useState<Merchant[]>([]);
   const [menuData, setMenuData] = useState<MenuItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isOffline, setIsOffline] = useState<boolean>(!navigator.onLine);
   const { getItemCount, getSubtotal } = useCart();
   const { isServiceOpen } = useSettings();
   const navigate = useNavigate();
@@ -49,9 +52,24 @@ const HomePage: React.FC = () => {
   const totalItems = getItemCount();
   const totalAmount = useMemo(() => getSubtotal(), [getSubtotal]);
 
+  // Monitor online/offline status
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
   useEffect(() => {
     const initializeData = async () => {
       try {
+        setIsLoading(true);
         await indexedDBService.initDB();
         const cachedMerchants = await indexedDBService.getAll("merchantInfo");
         const cachedMenu = await indexedDBService.getAll("menuItems");
@@ -59,6 +77,7 @@ const HomePage: React.FC = () => {
         if (cachedMerchants.length > 0 && cachedMenu.length > 0) {
           setMerchants(cachedMerchants);
           setMenuData(cachedMenu);
+          setIsLoading(false);
         }
 
         if (navigator.onLine) {
@@ -73,6 +92,7 @@ const HomePage: React.FC = () => {
               "Error fetching data from Supabase:",
               merchantsError || menuError
             );
+            setIsLoading(false);
             return;
           }
           setMerchants(merchantsData || []);
@@ -90,6 +110,8 @@ const HomePage: React.FC = () => {
         }
       } catch (error) {
         console.error("Error initializing data:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
     initializeData();
@@ -194,6 +216,15 @@ const HomePage: React.FC = () => {
     <div className="min-h-screen bg-gray-100 pb-24">
       <Header title="diorder" />
       {!isServiceOpen && <ServiceClosedBanner className="mx-4 mt-4" />}
+      {isOffline && (
+        <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mx-4 mt-4 flex items-center">
+          <WifiOff size={20} className="mr-2" />
+          <span>
+            Anda sedang offline. Data yang ditampilkan adalah data terakhir yang
+            tersimpan.
+          </span>
+        </div>
+      )}
       <main
         className="container mx-auto px-4 py-6"
         onTouchStart={handleTouchStart}
@@ -247,14 +278,26 @@ const HomePage: React.FC = () => {
             <>
               <h2 className="text-xl font-bold mb-4">Daftar Resto</h2>
               <div className="grid gap-4">
-                {sortedMerchants.map((merchant: Merchant) => (
-                  <MerchantCard key={merchant.id} merchant={merchant} />
-                ))}
+                {isLoading
+                  ? Array(4)
+                      .fill(0)
+                      .map((_, i) => <MerchantSkeleton key={i} />)
+                  : sortedMerchants.map((merchant: Merchant) => (
+                      <MerchantCard key={merchant.id} merchant={merchant} />
+                    ))}
               </div>
             </>
           ) : activeTab === "makanan" ? (
             <>
-              {filteredMakanan.length === 0 ? (
+              {isLoading ? (
+                <div className="grid grid-cols-1 gap-4">
+                  {Array(4)
+                    .fill(0)
+                    .map((_, i) => (
+                      <ProductSkeleton key={i} />
+                    ))}
+                </div>
+              ) : filteredMakanan.length === 0 ? (
                 <div className="text-center p-8 bg-white rounded-lg shadow-md">
                   <p>Tidak ada makanan yang ditemukan.</p>
                 </div>
@@ -273,7 +316,15 @@ const HomePage: React.FC = () => {
             </>
           ) : (
             <>
-              {filteredMinuman.length === 0 ? (
+              {isLoading ? (
+                <div className="grid grid-cols-1 gap-4">
+                  {Array(4)
+                    .fill(0)
+                    .map((_, i) => (
+                      <ProductSkeleton key={i} />
+                    ))}
+                </div>
+              ) : filteredMinuman.length === 0 ? (
                 <div className="text-center p-8 bg-white rounded-lg shadow-md">
                   <p>Tidak ada minuman yang ditemukan.</p>
                 </div>

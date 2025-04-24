@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React from "react";
 import { CartItem as CartItemType } from "../types";
 import { useCart } from "../context/CartContext";
-import { Plus, Minus, Image as ImageIcon } from "lucide-react";
+import { Plus, Minus } from "lucide-react";
+import LazyImage from "./LazyImage";
 
 interface CartItemProps {
   item: CartItemType;
@@ -10,8 +11,6 @@ interface CartItemProps {
 
 const CartItem: React.FC<CartItemProps> = ({ item, merchantId }) => {
   const { updateQuantity, updateItemNotes } = useCart();
-  const [imageLoaded, setImageLoaded] = useState(false);
-  const [imageError, setImageError] = useState(false);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -25,14 +24,6 @@ const CartItem: React.FC<CartItemProps> = ({ item, merchantId }) => {
     updateItemNotes(item.id, e.target.value, merchantId);
   };
 
-  const handleImageLoad = () => {
-    setImageLoaded(true);
-  };
-
-  const handleImageError = () => {
-    setImageError(true);
-  };
-
   const decreaseQuantity = () => {
     updateQuantity(item.id, item.quantity - 1, merchantId);
   };
@@ -44,26 +35,11 @@ const CartItem: React.FC<CartItemProps> = ({ item, merchantId }) => {
   return (
     <div className="flex flex-col sm:flex-row items-start sm:items-center py-4 border-b">
       <div className="relative w-20 h-20 min-w-20 rounded-md overflow-hidden bg-gray-100 flex items-center justify-center">
-        {!imageLoaded && !imageError && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-            <div className="w-5 h-5 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-          </div>
-        )}
-        {imageError ? (
-          <ImageIcon className="h-8 w-8 text-gray-400" aria-hidden="true" />
-        ) : (
-          <img
-            src={
-              item.image.startsWith("http") ? item.image : "/placeholder.svg"
-            }
-            alt={`Image of ${item.name}`}
-            className={`w-full h-full object-cover ${
-              !imageLoaded ? "opacity-0" : "opacity-100"
-            } transition-opacity`}
-            onLoad={handleImageLoad}
-            onError={handleImageError}
-          />
-        )}
+        <LazyImage
+          src={item.image.startsWith("http") ? item.image : "/placeholder.svg"}
+          alt={`Image of ${item.name}`}
+          className="w-full h-full object-cover"
+        />
       </div>
       <div className="ml-0 sm:ml-4 mt-3 sm:mt-0 flex-1 w-full">
         <h3 className="font-medium">{item.name}</h3>

@@ -3,6 +3,7 @@ import { Merchant } from "../types";
 import { Link } from "react-router-dom";
 import { MapPin, ChevronRight, Clock } from "lucide-react";
 import { isCurrentlyOpen } from "../utils/merchantUtils";
+import LazyImage from "./LazyImage";
 
 interface MerchantCardProps {
   merchant: Merchant;
@@ -15,9 +16,13 @@ const MerchantCard: React.FC<MerchantCardProps> = ({ merchant }) => {
     <div className="bg-white rounded-lg shadow-md overflow-hidden mb-4">
       <Link to={`/menu/${merchant.id}`}>
         <div className="flex p-3">
-          <img
-            src={merchant.logo.startsWith("http") ? merchant.logo : "/placeholder.svg"}
-            alt=""
+          <LazyImage
+            src={
+              merchant.logo.startsWith("http")
+                ? merchant.logo
+                : "/placeholder.svg"
+            }
+            alt={merchant.name}
             className={`w-20 h-20 rounded-lg object-cover ${
               !isOpen ? "grayscale" : ""
             }`}

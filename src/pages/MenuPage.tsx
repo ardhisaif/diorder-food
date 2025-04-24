@@ -10,6 +10,7 @@ import { isCurrentlyOpen } from "../utils/merchantUtils";
 import supabase from "../utils/supabase/client";
 import { indexedDBService } from "../utils/indexedDB";
 import ServiceClosedBanner from "../components/ServiceClosedBanner";
+import { CategorySkeleton } from "../components/Skeletons";
 
 const MenuPage: React.FC = () => {
   const { merchantId } = useParams<{ merchantId: string }>();
@@ -21,6 +22,7 @@ const MenuPage: React.FC = () => {
   const { getItemCount, getSubtotal } = useCart();
   const { isServiceOpen } = useSettings();
   const navigate = useNavigate();
+
   // Monitor online/offline status
   useEffect(() => {
     const handleOnline = () => setIsOffline(false);
@@ -60,7 +62,6 @@ const MenuPage: React.FC = () => {
 
         if (cachedMenuItems.length > 0) {
           setMenuItems(cachedMenuItems);
-          setIsLoading(false);
         }
 
         // Jika online, update cache dengan data terbaru dari server
@@ -82,24 +83,27 @@ const MenuPage: React.FC = () => {
 
           if (merchantError || menuError) {
             console.error("Error fetching data:", merchantError || menuError);
-            setIsLoading(false);
-            return;
-          }
+            // Don't set isLoading to false here as we might have cached data
+          } else {
+            if (merchantData) {
+              setMerchant(merchantData);
+              setIsOpen(isCurrentlyOpen(merchantData.openingHours));
+              await indexedDBService.update("merchantInfo", merchantData);
+            }
 
-          if (merchantData) {
-            setMerchant(merchantData);
-            setIsOpen(isCurrentlyOpen(merchantData.openingHours));
-            await indexedDBService.update("merchantInfo", merchantData);
-          }
-
-          if (menuData) {
-            setMenuItems(menuData);
-            await indexedDBService.cacheMenuItems(menuData, Number(merchantId));
+            if (menuData) {
+              setMenuItems(menuData);
+              await indexedDBService.cacheMenuItems(
+                menuData,
+                Number(merchantId)
+              );
+            }
           }
         }
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
+        // Set loading to false after everything is done
         setIsLoading(false);
       }
     };
@@ -117,14 +121,6 @@ const MenuPage: React.FC = () => {
 
     return () => clearInterval(intervalId);
   }, [merchant]);
-
-  if (isLoading) {
-    return (
-      <div className="h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-10 w-10 border-t-4 border-orange-500 border-solid"></div>
-      </div>
-    );
-  }
 
   // Group menu items by category
   const menuByCategory: Record<string, MenuItemType[]> = {};
@@ -146,9 +142,35 @@ const MenuPage: React.FC = () => {
     }).format(amount);
   };
 
+  const renderMerchantInfo = () => {
+    if (isLoading) {
+      return (
+        <div className="bg-white rounded-lg shadow-md p-4 mb-6 animate-pulse">
+          <div className="h-5 bg-gray-200 rounded w-3/4 mb-2"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+          <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+        <h2 className="font-bold text-lg">{merchant?.name}</h2>
+        <p className="text-gray-600 text-sm">{merchant?.address}</p>
+        <div className="flex items-center mt-2">
+          <Clock size={16} className="mr-1" />
+          <span className={isOpen ? "text-green-600" : "text-red-600"}>
+            {isOpen ? "Buka" : "Tutup"} • {merchant?.openingHours.open} -{" "}
+            {merchant?.openingHours?.close}
+          </span>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 pb-32">
-      <Header title={merchant?.name || ""} showBack />
+      <Header title={merchant?.name || "Menu"} showBack />
 
       {!isServiceOpen && <ServiceClosedBanner className="mx-4 mt-4" />}
 
@@ -162,31 +184,29 @@ const MenuPage: React.FC = () => {
             </span>
           </div>
         )}
-        <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-          <h2 className="font-bold text-lg">{merchant?.name}</h2>
-          <p className="text-gray-600 text-sm">{merchant?.address}</p>
-          <div className="flex items-center mt-2">
-            <Clock size={16} className="mr-1" />
-            <span className={isOpen ? "text-green-600" : "text-red-600"}>
-              {isOpen ? "Buka" : "Tutup"} • {merchant?.openingHours.open} -{" "}
-              {merchant?.openingHours?.close}
-            </span>
-          </div>
-        </div>
 
-        {Object.entries(menuByCategory).map(([category, items]) => (
-          <div key={category} className="mb-6">
-            <h3 className="text-lg font-bold mb-3">{category}</h3>
-            {items.map((item) => (
-              <MenuItem
-                key={item.id}
-                item={item}
-                merchantId={merchant?.id ?? 0}
-                isOpen={isOpen && isServiceOpen}
-              />
-            ))}
-          </div>
-        ))}
+        {renderMerchantInfo()}
+
+        {isLoading ? (
+          <>
+            <CategorySkeleton />
+            <CategorySkeleton />
+          </>
+        ) : (
+          Object.entries(menuByCategory).map(([category, items]) => (
+            <div key={category} className="mb-6">
+              <h3 className="text-lg font-bold mb-3">{category}</h3>
+              {items.map((item) => (
+                <MenuItem
+                  key={item.id}
+                  item={item}
+                  merchantId={merchant?.id ?? 0}
+                  isOpen={isOpen && isServiceOpen}
+                />
+              ))}
+            </div>
+          ))
+        )}
       </div>
 
       {itemCount > 0 && totalAmount > 0 && isServiceOpen && (

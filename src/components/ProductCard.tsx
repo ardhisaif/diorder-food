@@ -7,6 +7,7 @@ import { Link } from "react-router-dom";
 import { isCurrentlyOpen } from "../utils/merchantUtils";
 import supabase from "../utils/supabase/client";
 import { Merchant } from "../types";
+import LazyImage from "./LazyImage";
 
 interface ProductCardProps {
   item: MenuItem;
@@ -23,20 +24,28 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const { isServiceOpen } = useSettings();
   const quantity = getItemQuantity(item.id);
   const [merchant, setMerchant] = useState<Merchant | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const fetchMerchant = async () => {
-      const { data, error } = await supabase
-        .from("merchants")
-        .select("*")
-        .eq("id", merchantId)
-        .single();
+      try {
+        setIsLoading(true);
+        const { data, error } = await supabase
+          .from("merchants")
+          .select("*")
+          .eq("id", merchantId)
+          .single();
 
-      if (error) {
-        console.error("Error fetching merchant:", error);
-        setMerchant(null);
-      } else {
-        setMerchant(data);
+        if (error) {
+          console.error("Error fetching merchant:", error);
+          setMerchant(null);
+        } else {
+          setMerchant(data);
+        }
+      } catch (error) {
+        console.error("Error fetching merchant data:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -62,9 +71,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
       }`}
     >
       <div className="flex">
-        <img
+        <LazyImage
           src={item.image.startsWith("http") ? item.image : "/placeholder.svg"}
-          alt=""
+          alt={item.name}
           className="w-24 h-24 object-cover"
         />
         <div className="p-3 flex-1">
@@ -95,6 +104,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
                         ? "bg-orange-500 text-white"
                         : "bg-gray-200 text-gray-400"
                     }`}
+                    disabled={isLoading}
                   >
                     <Minus size={14} />
                   </button>
@@ -104,6 +114,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
                 <button
                   onClick={() => addToCart(item, merchantId)}
                   className="w-6 h-6 flex items-center justify-center bg-orange-500 text-white rounded-full"
+                  disabled={isLoading}
                 >
                   <Plus size={14} />
                 </button>

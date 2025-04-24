@@ -7,6 +7,7 @@ import supabase from "../utils/supabase/client";
 import { ShoppingBag, Plus } from "lucide-react";
 import { isCurrentlyOpen } from "../utils/merchantUtils";
 import { Merchant } from "../types";
+import { CartItemSkeleton } from "../components/Skeletons";
 
 const WHATSAPP_NUMBER = "6282217012023";
 const DELIVERY_FEE = 5000;
@@ -22,6 +23,7 @@ const CartPage: React.FC = () => {
   } = useCart();
   const navigate = useNavigate();
   const [merchantsWithItems, setMerchantsWithItems] = useState<Merchant[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const fetchMerchantsWithItems = async () => {
@@ -72,6 +74,8 @@ const CartPage: React.FC = () => {
       alert("Mohon lengkapi data pengiriman");
       return;
     }
+
+    setIsLoading(true);
 
     const subtotal = merchantsWithItems.reduce((total, merchant) => {
       if (isCurrentlyOpen(merchant.openingHours)) {
@@ -128,6 +132,160 @@ const CartPage: React.FC = () => {
     // Clear the entire cart after checkout
     clearCart();
     navigate("/");
+    setIsLoading(false);
+  };
+
+  const renderShippingForm = () => (
+    <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+      <h2 className="font-bold text-lg mb-4">Informasi Pengiriman</h2>
+
+      <div className="mb-4">
+        <label
+          className="block text-gray-700 text-sm font-bold mb-2"
+          htmlFor="name"
+        >
+          Nama Pemesan
+        </label>
+        <input
+          type="text"
+          id="name"
+          name="name"
+          value={customerInfo.name}
+          onChange={handleInputChange}
+          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+          placeholder="Masukkan nama Anda"
+          required
+        />
+      </div>
+
+      <div className="mb-4">
+        <label className="block text-gray-700 text-sm font-bold mb-2">
+          Kecamatan
+        </label>
+        <input
+          type="text"
+          value="Duduksampeyan"
+          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-500 leading-tight bg-gray-100"
+          disabled
+        />
+      </div>
+
+      <div className="mb-4">
+        <label
+          className="block text-gray-700 text-sm font-bold mb-2"
+          htmlFor="village"
+        >
+          Desa
+        </label>
+        <select
+          id="village"
+          name="village"
+          value={customerInfo.village}
+          onChange={handleInputChange}
+          className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+          required
+        >
+          <option value="">Pilih Desa</option>
+          {VILLAGES.map((village) => (
+            <option key={village} value={village}>
+              {village}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="mb-4">
+        <label
+          className="block text-gray-700 text-sm font-bold mb-2"
+          htmlFor="addressDetail"
+        >
+          Detail Alamat
+        </label>
+        <textarea
+          id="addressDetail"
+          name="addressDetail"
+          value={customerInfo.addressDetail}
+          onChange={handleInputChange}
+          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+          placeholder="Masukkan detail alamat (RT/RW, nama gang, warna pagar, dll)"
+          rows={3}
+          required
+        />
+      </div>
+
+      <div className="mb-4">
+        <label
+          className="block text-gray-700 text-sm font-bold mb-2"
+          htmlFor="notes"
+        >
+          Catatan Tambahan
+        </label>
+        <textarea
+          id="notes"
+          name="notes"
+          value={customerInfo.notes}
+          onChange={handleInputChange}
+          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+          placeholder="Catatan tambahan untuk pesanan Anda"
+          rows={3}
+        />
+      </div>
+    </div>
+  );
+
+  const renderEmptyCart = () => (
+    <div className="bg-white rounded-lg shadow-md p-8 text-center">
+      <ShoppingBag size={48} className="mx-auto text-gray-400 mb-4" />
+      <h2 className="text-xl font-bold mb-2">Keranjang Kosong</h2>
+      <p className="text-gray-600 mb-4">
+        Anda belum menambahkan item ke keranjang
+      </p>
+      <button
+        onClick={() => navigate("/")}
+        className="bg-orange-500 text-white py-2 px-4 rounded-lg font-medium"
+      >
+        Lihat Merchant
+      </button>
+    </div>
+  );
+
+  const renderMerchantItems = (merchant: Merchant) => {
+    const items = getMerchantItems(merchant.id);
+    const merchantSubtotal = getMerchantTotal(merchant.id);
+    const isOpen = isCurrentlyOpen(merchant.openingHours);
+
+    return (
+      <div
+        key={merchant.id}
+        className={`bg-white rounded-lg shadow-md p-4 mb-6 ${
+          isOpen ? "" : "filter grayscale"
+        }`}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-bold text-lg">{merchant.name}</h2>
+          <button
+            onClick={() => navigate(`/menu/${merchant.id}`)}
+            className="text-orange-500 flex items-center text-sm"
+          >
+            <Plus size={16} className="mr-1" />
+            Tambah Menu
+          </button>
+        </div>
+
+        {items.map((item) => (
+          <CartItem key={item.id} item={item} merchantId={merchant.id} />
+        ))}
+
+        <div className="mt-4 pt-4">
+          <div className="flex justify-between mb-2">
+            <span>Subtotal</span>
+            <span className="font-bold">
+              {formatCurrency(merchantSubtotal)}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   const cartEmpty = merchantsWithItems.length === 0;
@@ -144,160 +302,33 @@ const CartPage: React.FC = () => {
       <Header title="Keranjang" showBack />
 
       <div className="container mx-auto px-4 py-6">
-        {cartEmpty ? (
-          <div className="bg-white rounded-lg shadow-md p-8 text-center">
-            <ShoppingBag size={48} className="mx-auto text-gray-400 mb-4" />
-            <h2 className="text-xl font-bold mb-2">Keranjang Kosong</h2>
-            <p className="text-gray-600 mb-4">
-              Anda belum menambahkan item ke keranjang
-            </p>
-            <button
-              onClick={() => navigate("/")}
-              className="bg-orange-500 text-white py-2 px-4 rounded-lg font-medium"
-            >
-              Lihat Merchant
-            </button>
-          </div>
-        ) : (
+        {isLoading ? (
           <>
-            <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-              <h2 className="font-bold text-lg mb-4">Informasi Pengiriman</h2>
+            {renderShippingForm()}
 
-              <div className="mb-4">
-                <label
-                  className="block text-gray-700 text-sm font-bold mb-2"
-                  htmlFor="name"
-                >
-                  Nama Pemesan
-                </label>
-                <input
-                  type="text"
-                  id="name"
-                  name="name"
-                  value={customerInfo.name}
-                  onChange={handleInputChange}
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                  placeholder="Masukkan nama Anda"
-                  required
-                />
+            <div className="bg-white rounded-lg shadow-md p-4 mb-6 animate-pulse">
+              <div className="flex items-center justify-between mb-4">
+                <div className="h-5 bg-gray-200 rounded w-1/4"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/5"></div>
               </div>
 
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2">
-                  Kecamatan
-                </label>
-                <input
-                  type="text"
-                  value="Duduksampeyan"
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-500 leading-tight bg-gray-100"
-                  disabled
-                />
-              </div>
+              <CartItemSkeleton />
+              <CartItemSkeleton />
 
-              <div className="mb-4">
-                <label
-                  className="block text-gray-700 text-sm font-bold mb-2"
-                  htmlFor="village"
-                >
-                  Desa
-                </label>
-                <select
-                  id="village"
-                  name="village"
-                  value={customerInfo.village}
-                  onChange={handleInputChange}
-                  className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                  required
-                >
-                  <option value="">Pilih Desa</option>
-                  {VILLAGES.map((village) => (
-                    <option key={village} value={village}>
-                      {village}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="mb-4">
-                <label
-                  className="block text-gray-700 text-sm font-bold mb-2"
-                  htmlFor="addressDetail"
-                >
-                  Detail Alamat
-                </label>
-                <textarea
-                  id="addressDetail"
-                  name="addressDetail"
-                  value={customerInfo.addressDetail}
-                  onChange={handleInputChange}
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                  placeholder="Masukkan detail alamat (RT/RW, nama gang, warna pagar, dll)"
-                  rows={3}
-                  required
-                />
-              </div>
-
-              <div className="mb-4">
-                <label
-                  className="block text-gray-700 text-sm font-bold mb-2"
-                  htmlFor="notes"
-                >
-                  Catatan Tambahan
-                </label>
-                <textarea
-                  id="notes"
-                  name="notes"
-                  value={customerInfo.notes}
-                  onChange={handleInputChange}
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                  placeholder="Catatan tambahan untuk pesanan Anda"
-                  rows={3}
-                />
+              <div className="mt-4 pt-4">
+                <div className="flex justify-between mb-2">
+                  <div className="h-4 bg-gray-200 rounded w-1/6"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/6"></div>
+                </div>
               </div>
             </div>
-
-            {merchantsWithItems.map((merchant) => {
-              const items = getMerchantItems(merchant.id);
-              const merchantSubtotal = getMerchantTotal(merchant.id);
-              const isOpen = isCurrentlyOpen(merchant.openingHours);
-
-              return (
-                <div
-                  key={merchant.id}
-                  className={`bg-white rounded-lg shadow-md p-4 mb-6 ${
-                    isOpen ? "" : "filter grayscale"
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="font-bold text-lg">{merchant.name}</h2>
-                    <button
-                      onClick={() => navigate(`/menu/${merchant.id}`)}
-                      className="text-orange-500 flex items-center text-sm"
-                    >
-                      <Plus size={16} className="mr-1" />
-                      Tambah Menu
-                    </button>
-                  </div>
-
-                  {items.map((item) => (
-                    <CartItem
-                      key={item.id}
-                      item={item}
-                      merchantId={merchant.id}
-                    />
-                  ))}
-
-                  <div className="mt-4 pt-4">
-                    <div className="flex justify-between mb-2">
-                      <span>Subtotal</span>
-                      <span className="font-bold">
-                        {formatCurrency(merchantSubtotal)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+          </>
+        ) : cartEmpty ? (
+          renderEmptyCart()
+        ) : (
+          <>
+            {renderShippingForm()}
+            {merchantsWithItems.map(renderMerchantItems)}
           </>
         )}
       </div>
@@ -327,8 +358,16 @@ const CartPage: React.FC = () => {
               <button
                 onClick={handleCheckout}
                 className="bg-orange-500 text-white px-6 py-3 rounded-lg font-bold"
+                disabled={isLoading}
               >
-                Buat Pesanan
+                {isLoading ? (
+                  <span className="flex items-center">
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                    Memuat...
+                  </span>
+                ) : (
+                  "Buat Pesanan"
+                )}
               </button>
             </div>
           </div>

@@ -3,6 +3,7 @@ import { MenuItem as MenuItemType } from "../types";
 import { useCart } from "../context/CartContext";
 import { useSettings } from "../context/SettingsContext";
 import { Plus, Minus, Clock } from "lucide-react";
+import LazyImage from "./LazyImage";
 
 interface MenuItemProps {
   item: MenuItemType;
@@ -33,8 +34,9 @@ const MenuItem: React.FC<MenuItemProps> = ({ item, merchantId, isOpen }) => {
       }`}
     >
       <div className="flex">
-        <img
+        <LazyImage
           src={item.image.startsWith("http") ? item.image : "/placeholder.svg"}
+          alt={item.name}
           className="w-24 h-24 object-cover"
         />
         <div className="p-3 flex-1">
