@@ -145,11 +145,6 @@ Diorder - **Satu Aplikasi, Banyak Pilihan, Satu Ongkir!**
 - **Tailwind CSS**: Untuk styling yang cepat dan responsif.
 - **Vite**: Build tool untuk pengembangan yang cepat.
 
-### **Integrasi**
-
-- **WhatsApp API**: Untuk mengirim detail pesanan ke kurir.
-- **Google Maps API**: Untuk memilih lokasi pengiriman (opsional).
-
 ---
 
 ## **Instalasi**
@@ -171,15 +166,7 @@ Pastikan Anda telah menginstal **Node.js** dan **npm**. Kemudian jalankan perint
 npm install
 ```
 
-### **3. Konfigurasi API Key**
-
-Jika menggunakan fitur Google Maps, tambahkan API key Anda di file `src/components/MapModal.tsx` pada bagian berikut:
-
-```ts
-googleMapsApiKey: "YOUR_GOOGLE_MAPS_API_KEY";
-```
-
-### **4. Jalankan Aplikasi**
+### **3. Jalankan Aplikasi**
 
 Untuk menjalankan aplikasi dalam mode pengembangan:
 
@@ -189,7 +176,7 @@ npm run dev
 
 Akses aplikasi di [http://localhost:5173](http://localhost:5173).
 
-### **5. Build untuk Produksi**
+### **4. Build untuk Produksi**
 
 Untuk membuat build produksi:
 
