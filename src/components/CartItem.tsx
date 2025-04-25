@@ -34,7 +34,7 @@ const CartItem: React.FC<CartItemProps> = ({ item, merchantId }) => {
 
   return (
     <div className="flex flex-row items-start py-4 border-b">
-      <div className="relative w-20 h-20 min-w-20 rounded-md overflow-hidden bg-gray-100 flex items-center justify-center">
+      <div className="relative w-20 h-20 min-w-20 rounded-md overflow-hidden bg-gray-100 flex items-center justify-center self-center">
         <LazyImage
           src={item.image.startsWith("http") ? item.image : "/placeholder.svg"}
           alt={`Image of ${item.name}`}
