@@ -239,11 +239,26 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
     });
   };
 
-  const clearCart = () => {
+  // Modify the clearCart function to properly handle IndexedDB
+  const clearCart = async () => {
+    // Clear cart items from state
     setState((prevState) => ({
       ...prevState,
       items: {},
     }));
+
+    // Remove all items from IndexedDB
+    try {
+      // Get all cart items from IndexedDB
+      const cartItems = await indexedDBService.getCart();
+
+      // Delete each item
+      for (const item of cartItems) {
+        await indexedDBService.removeFromCart(item.id);
+      }
+    } catch (error) {
+      console.error("Error clearing cart in IndexedDB:", error);
+    }
   };
 
   const clearMerchantCart = (merchantId: number) => {
