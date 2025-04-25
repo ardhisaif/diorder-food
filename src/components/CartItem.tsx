@@ -33,7 +33,7 @@ const CartItem: React.FC<CartItemProps> = ({ item, merchantId }) => {
   };
 
   return (
-    <div className="flex flex-col sm:flex-row items-start sm:items-center py-4 border-b">
+    <div className="flex flex-row items-start py-4 border-b">
       <div className="relative w-20 h-20 min-w-20 rounded-md overflow-hidden bg-gray-100 flex items-center justify-center">
         <LazyImage
           src={item.image.startsWith("http") ? item.image : "/placeholder.svg"}
@@ -41,9 +41,9 @@ const CartItem: React.FC<CartItemProps> = ({ item, merchantId }) => {
           className="w-full h-full object-cover"
         />
       </div>
-      <div className="ml-0 sm:ml-4 mt-3 sm:mt-0 flex-1 w-full">
+      <div className="ml-4 flex-1 w-full">
         <h3 className="font-medium">{item.name}</h3>
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mt-2 gap-2">
+        <div className="flex flex-row items-center justify-between mt-2 gap-2">
           <div className="text-orange-500 font-bold">
             {formatCurrency(item.price)}
           </div>
