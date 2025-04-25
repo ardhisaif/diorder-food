@@ -75,6 +75,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   const [state, setState] = useState<CartState>(getInitialState);
+  const [isClearingCart, setIsClearingCart] = useState(false);
 
   // Initialize IndexedDB when the component mounts
   useEffect(() => {
@@ -105,6 +106,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
   }, []);
 
   useEffect(() => {
+    if (isClearingCart) return; // Jangan sync saat clearCart
     const syncToIndexedDB = async () => {
       try {
         // Flatten cart items from all merchants
@@ -123,7 +125,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
     };
 
     syncToIndexedDB();
-  }, [state]);
+  }, [state, isClearingCart]);
 
   // Effect to save customer info to localStorage whenever it changes
   useEffect(() => {
@@ -241,13 +243,12 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
 
   // Modify the clearCart function to properly handle IndexedDB
   const clearCart = async () => {
-    // Clear cart items from state
+    setIsClearingCart(true);
     setState((prevState) => ({
       ...prevState,
       items: {},
     }));
 
-    // Remove all items from IndexedDB
     try {
       // Get all cart items from IndexedDB
       const cartItems = await indexedDBService.getCart();
@@ -258,6 +259,8 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
       }
     } catch (error) {
       console.error("Error clearing cart in IndexedDB:", error);
+    } finally {
+      setIsClearingCart(false);
     }
   };
 
