@@ -51,7 +51,7 @@ const CartItem: React.FC<CartItemProps> = ({ item, merchantId }) => {
             <button
               onClick={decreaseQuantity}
               aria-label={`Decrease quantity of ${item.name}`}
-              className="w-8 h-8 flex items-center justify-center rounded-full bg-orange-500 text-white focus:outline-none focus:ring-2 focus:ring-orange-300 focus:ring-offset-1"
+              className="w-6 h-6 flex items-center justify-center rounded-full bg-orange-500 text-white focus:outline-none focus:ring-2 focus:ring-orange-300 focus:ring-offset-1"
             >
               <Minus size={16} />
             </button>
@@ -61,7 +61,7 @@ const CartItem: React.FC<CartItemProps> = ({ item, merchantId }) => {
             <button
               onClick={increaseQuantity}
               aria-label={`Increase quantity of ${item.name}`}
-              className="w-8 h-8 flex items-center justify-center rounded-full bg-orange-500 text-white focus:outline-none focus:ring-2 focus:ring-orange-300 focus:ring-offset-1"
+              className="w-6 h-6 flex items-center justify-center rounded-full bg-orange-500 text-white focus:outline-none focus:ring-2 focus:ring-orange-300 focus:ring-offset-1"
             >
               <Plus size={16} />
             </button>
