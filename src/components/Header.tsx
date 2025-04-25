@@ -12,7 +12,7 @@ const Header: React.FC<HeaderProps> = ({ title, showBack = false }) => {
 
   const handleWhatsAppChat = () => {
     const message = encodeURIComponent("Halo, saya ingin bertanya sesuatu.");
-    window.open(`https://wa.me/6282217012023?text=${message}`, "_blank");
+    window.open(`https://wa.me/628888465289?text=${message}`, "_blank");
   };
 
   return (

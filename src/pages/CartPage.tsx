@@ -9,7 +9,7 @@ import { isCurrentlyOpen } from "../utils/merchantUtils";
 import { Merchant } from "../types";
 import { CartItemSkeleton } from "../components/Skeletons";
 
-const WHATSAPP_NUMBER = "6282217012023";
+const WHATSAPP_NUMBER = "628888465289";
 const DELIVERY_FEE = 5000;
 const VILLAGES = ["Duduksampeyan", "Sumengko", "Petisbenem", "Setrohadi"];
 

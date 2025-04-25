@@ -401,4 +401,4 @@ Diorder dirancang dengan pendekatan bertumbuh bersama - membangun ekosistem yang
 
 ## **Kontak**
 
-Jika Anda memiliki pertanyaan atau saran, silakan hubungi kami melalui [WhatsApp](https://wa.me/6282217012023).
+Jika Anda memiliki pertanyaan atau saran, silakan hubungi kami melalui [WhatsApp](https://wa.me/628888465289).
