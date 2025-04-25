@@ -17,24 +17,17 @@ const AppLayout = () => {
 };
 
 // Define routes with the layout wrapper
-const router = createBrowserRouter(
-  [
-    {
-      path: "/",
-      element: <AppLayout />,
-      children: [
-        { index: true, element: <HomePage /> },
-        { path: "menu/:merchantId", element: <MenuPage /> },
-        { path: "cart", element: <CartPage /> },
-      ],
-    },
-  ],
+const router = createBrowserRouter([
   {
-    future: {
-      v7_relativeSplatPath: true,
-    },
-  }
-);
+    path: "/",
+    element: <AppLayout />,
+    children: [
+      { index: true, element: <HomePage /> },
+      { path: "menu/:merchantId", element: <MenuPage /> },
+      { path: "cart", element: <CartPage /> },
+    ],
+  },
+]);
 
 function App() {
   return (

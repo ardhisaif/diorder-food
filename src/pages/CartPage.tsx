@@ -120,6 +120,65 @@ const CartPage: React.FC = () => {
 
     message += `Terima kasih telah memesan!`;
 
+    // Track checkout event with Google Analytics
+    const trackCheckoutEvent = () => {
+      // Generate a simple order ID using timestamp and random string
+      const orderId = `ORD-${Date.now()}-${Math.random()
+        .toString(36)
+        .substring(2, 8)}`;
+
+      // Create transaction data
+      const transactionData = {
+        transaction_id: orderId,
+        value: totalWithDelivery,
+        currency: "IDR",
+        shipping: DELIVERY_FEE,
+        items: merchantsWithItems.flatMap((merchant) => {
+          if (isCurrentlyOpen(merchant.openingHours)) {
+            const items = getMerchantItems(merchant.id);
+            return items.map((item) => ({
+              item_id: `${merchant.id}-${item.id}`,
+              item_name: item.name,
+              price: item.price,
+              quantity: item.quantity,
+              merchant_id: merchant.id,
+              merchant_name: merchant.name,
+            }));
+          }
+          return [];
+        }),
+      };
+
+      try {
+        // Check if gtag function exists (window.gtag)
+        if (typeof window.gtag !== "undefined") {
+          // Track the purchase event
+          window.gtag("event", "purchase", transactionData);
+
+          // Also track a custom checkout completed event
+          window.gtag("event", "checkout_completed", {
+            customer_village: customerInfo.village,
+            order_id: orderId,
+            order_value: totalWithDelivery,
+            item_count: transactionData.items.length,
+            merchant_count: merchantsWithItems.filter((m) =>
+              isCurrentlyOpen(m.openingHours)
+            ).length,
+          });
+
+          console.log("Order tracked:", transactionData);
+        } else {
+          console.log("Google Analytics not available");
+        }
+      } catch (error) {
+        console.error("Error tracking checkout event:", error);
+        // Don't block checkout process if tracking fails
+      }
+    };
+
+    // Track the event
+    trackCheckoutEvent();
+
     // Encode the message for the URL
     const encodedMessage = encodeURIComponent(message);
 
