@@ -17,7 +17,24 @@ export default defineConfig({
         background_color: "#ffffff",
         display: "standalone",
         start_url: "/",
-        icons: [],
+        icons: [
+          {
+            src: "/pwa-192x192.png",
+            sizes: "192x192",
+            type: "image/png",
+          },
+          {
+            src: "/pwa-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+          },
+          {
+            src: "/pwa-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any maskable",
+          },
+        ],
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,jpg,jpeg}"],
@@ -38,13 +55,14 @@ export default defineConfig({
           },
           // New cache rules with 1-day expiration
           {
-            urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
-            handler: "NetworkFirst",
+            urlPattern:
+              /^https:\/\/.*\.supabase\.co\/storage\/v1\/object\/public\/.*/i,
+            handler: "CacheFirst",
             options: {
-              cacheName: "supabase-api-cache",
+              cacheName: "supabase-images",
               expiration: {
                 maxEntries: 100,
-                maxAgeSeconds: 86400, // 1 day in seconds
+                maxAgeSeconds: 86400, // 1 day
               },
               cacheableResponse: {
                 statuses: [0, 200],

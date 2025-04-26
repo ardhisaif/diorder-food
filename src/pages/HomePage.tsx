@@ -150,7 +150,12 @@ const HomePage: React.FC = () => {
 
   // Sort merchants by open status (avoid mutating original array)
   const sortedMerchants = useMemo(() => {
-    return merchants.slice().sort((a, b) => {
+    // Urutkan berdasarkan nama (A-Z) lebih dulu
+    const byName = merchants
+      .slice()
+      .sort((a, b) => a.name.localeCompare(b.name));
+    // Lalu urutkan berdasarkan status buka/tutup (buka di atas)
+    return byName.sort((a, b) => {
       const isOpenA = a.openingHours ? isCurrentlyOpen(a.openingHours) : false;
       const isOpenB = b.openingHours ? isCurrentlyOpen(b.openingHours) : false;
       return isOpenA === isOpenB ? 0 : isOpenA ? -1 : 1;

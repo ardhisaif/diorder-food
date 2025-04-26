@@ -38,33 +38,38 @@ const MenuPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    let isMounted = true;
     const fetchMerchantAndMenu = async () => {
       try {
         setIsLoading(true);
-        // Initialize IndexedDB
         await indexedDBService.initDB();
 
-        // Prioritaskan data dari IndexedDB
+        // Ambil data dari cache lebih dulu
         const cachedMerchants = await indexedDBService.getAll("merchantInfo");
         const cachedMerchant = cachedMerchants.find(
           (m) => m.id === Number(merchantId)
         );
-
         const cachedMenuItems = await indexedDBService.getMenuItems(
           Number(merchantId)
         );
 
-        // Set data dari cache terlebih dahulu
-        if (cachedMerchant) {
-          setMerchant(cachedMerchant);
-          setIsOpen(isCurrentlyOpen(cachedMerchant.openingHours));
+        // Render data cache langsung
+        if (isMounted) {
+          if (cachedMerchant) {
+            setMerchant(cachedMerchant);
+            setIsOpen(isCurrentlyOpen(cachedMerchant.openingHours));
+          }
+          if (cachedMenuItems.length > 0) {
+            // Urutkan berdasarkan nama, atau field lain sesuai kebutuhan
+            const sortedMenu = [...cachedMenuItems].sort((a, b) =>
+              a.name.localeCompare(b.name)
+            );
+            setMenuItems(sortedMenu);
+          }
+          setIsLoading(false); // Jangan tunggu fetch server
         }
 
-        if (cachedMenuItems.length > 0) {
-          setMenuItems(cachedMenuItems);
-        }
-
-        // Jika online, update cache dengan data terbaru dari server
+        // Fetch data terbaru dari server di background
         if (navigator.onLine) {
           const [merchantResponse, menuResponse] = await Promise.all([
             supabase
@@ -75,40 +80,32 @@ const MenuPage: React.FC = () => {
             supabase
               .from("menu")
               .select("*")
-              .eq("merchant_id", Number(merchantId)),
+              .eq("merchant_id", Number(merchantId))
+              .order("name", { ascending: true }), // Tambahkan order di sini
           ]);
 
           const { data: merchantData, error: merchantError } = merchantResponse;
           const { data: menuData, error: menuError } = menuResponse;
 
-          if (merchantError || menuError) {
-            console.error("Error fetching data:", merchantError || menuError);
-            // Don't set isLoading to false here as we might have cached data
-          } else {
-            if (merchantData) {
-              setMerchant(merchantData);
-              setIsOpen(isCurrentlyOpen(merchantData.openingHours));
-              await indexedDBService.update("merchantInfo", merchantData);
-            }
-
-            if (menuData) {
-              setMenuItems(menuData);
-              await indexedDBService.cacheMenuItems(
-                menuData,
-                Number(merchantId)
-              );
-            }
+          if (!merchantError && merchantData && isMounted) {
+            setMerchant(merchantData);
+            setIsOpen(isCurrentlyOpen(merchantData.openingHours));
+            await indexedDBService.update("merchantInfo", merchantData);
+          }
+          if (!menuError && menuData && isMounted) {
+            setMenuItems(menuData);
+            await indexedDBService.cacheMenuItems(menuData, Number(merchantId));
           }
         }
       } catch (error) {
         console.error("Error fetching data:", error);
-      } finally {
-        // Set loading to false after everything is done
-        setIsLoading(false);
       }
     };
 
     fetchMerchantAndMenu();
+    return () => {
+      isMounted = false;
+    };
   }, [merchantId]);
 
   // Update isOpen status every minute
