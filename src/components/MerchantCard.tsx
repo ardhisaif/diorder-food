@@ -31,8 +31,6 @@ const MerchantCard: React.FC<MerchantCardProps> = ({
               !isOpen ? "grayscale" : ""
             }`}
             loading="eager"
-            width={80}
-            height={80}
             priority={priority}
           />
           <div className="ml-4 flex-1">

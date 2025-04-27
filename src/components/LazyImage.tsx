@@ -7,8 +7,6 @@ interface LazyImageProps {
   className?: string;
   fallbackSrc?: string;
   loading?: "eager" | "lazy";
-  width?: number;
-  height?: number;
   priority?: boolean;
 }
 
@@ -17,8 +15,6 @@ const LazyImage: React.FC<LazyImageProps> = ({
   className = "",
   fallbackSrc = "/placeholder.svg",
   loading = "lazy",
-  width,
-  height,
   priority = false,
 }) => {
   const [isLoading, setIsLoading] = useState(true);
@@ -38,9 +34,6 @@ const LazyImage: React.FC<LazyImageProps> = ({
       try {
         // Don't replace the path, keep original object URL
         const urlObj = new URL(src);
-        // Add resize parameters if needed
-        if (width) urlObj.searchParams.set("width", width.toString());
-        if (height) urlObj.searchParams.set("height", height.toString());
         return urlObj.toString();
       } catch (e) {
         console.error("Error optimizing image URL:", e);
@@ -48,7 +41,7 @@ const LazyImage: React.FC<LazyImageProps> = ({
       }
     }
     return src;
-  }, [src, width, height]);
+  }, [src]);
 
   useEffect(() => {
     setImgSrc(optimizedSrc);
@@ -66,11 +59,6 @@ const LazyImage: React.FC<LazyImageProps> = ({
     setImgSrc(fallbackSrc);
   };
 
-  // Set explicit dimensions if provided
-  const dimensionProps: React.ImgHTMLAttributes<HTMLImageElement> = {};
-  if (width) dimensionProps.width = width;
-  if (height) dimensionProps.height = height;
-
   return (
     <div className={`relative overflow-hidden ${className}`}>
       <img
@@ -82,7 +70,6 @@ const LazyImage: React.FC<LazyImageProps> = ({
         loading={loadingStrategy}
         onLoad={handleLoad}
         onError={handleError}
-        {...dimensionProps}
         style={{ background: isLoading ? "#f3f4f6" : undefined }}
       />
       {/* Loading spinner dihapus */}
