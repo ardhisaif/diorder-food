@@ -39,8 +39,6 @@ const CartItem: React.FC<CartItemProps> = ({ item, merchantId }) => {
           src={item.image.startsWith("http") ? item.image : "/placeholder.svg"}
           alt={`Image of ${item.name}`}
           className="w-full h-full object-cover"
-          width={80}
-          height={80}
         />
       </div>
       <div className="ml-4 flex-1 w-full">

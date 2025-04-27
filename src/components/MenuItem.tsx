@@ -38,8 +38,6 @@ const MenuItem: React.FC<MenuItemProps> = ({ item, merchantId, isOpen }) => {
           src={item.image.startsWith("http") ? item.image : "/placeholder.svg"}
           alt=""
           className="w-24 h-24 object-cover"
-          width={96}
-          height={96}
         />
         <div className="p-3 flex-1">
           <h3 className="font-bold">{item.name}</h3>

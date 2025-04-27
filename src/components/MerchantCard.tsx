@@ -32,8 +32,6 @@ const MerchantCard: React.FC<MerchantCardProps> = ({
             }`}
             loading="eager"
             priority={priority}
-            width={80}
-            height={80}
           />
           <div className="ml-4 flex-1">
             <h3 className="font-bold text-lg">{merchant.name}</h3>
