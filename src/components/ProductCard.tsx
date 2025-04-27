@@ -38,7 +38,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
       <div className="flex">
         <LazyImage
           src={item.image.startsWith("http") ? item.image : "/placeholder.svg"}
-          alt={item.name}
+          alt=""
           className="w-24 h-24 object-cover"
         />
         <div className="p-3 flex-1">

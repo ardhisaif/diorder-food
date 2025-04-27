@@ -166,9 +166,9 @@ const CartPage: React.FC = () => {
             ).length,
           });
 
-          console.log("Order tracked:", transactionData);
+          // console.log("Order tracked:", transactionData);
         } else {
-          console.log("Google Analytics not available");
+          // console.log("Google Analytics not available");
         }
       } catch (error) {
         console.error("Error tracking checkout event:", error);

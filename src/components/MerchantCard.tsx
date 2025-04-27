@@ -26,7 +26,7 @@ const MerchantCard: React.FC<MerchantCardProps> = ({
                 ? merchant.logo
                 : "/placeholder.svg"
             }
-            alt={merchant.name}
+            alt=""
             className={`w-20 h-20 rounded-lg object-cover ${
               !isOpen ? "grayscale" : ""
             }`}

@@ -27,7 +27,7 @@ class IndexedDBService {
             // Delete the database and try again
             const deleteRequest = indexedDB.deleteDatabase(DB_NAME);
             deleteRequest.onsuccess = () => {
-              console.log("Database deleted successfully. Reopening...");
+              // console.log("Database deleted successfully. Reopening...");
               // Call initDB again after successful deletion
               setTimeout(() => this.initDB().then(resolve).catch(reject), 100);
             };

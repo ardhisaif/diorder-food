@@ -14,7 +14,6 @@ interface LazyImageProps {
 
 const LazyImage: React.FC<LazyImageProps> = ({
   src,
-  alt,
   className = "",
   fallbackSrc = "/placeholder.svg",
   loading = "lazy",
@@ -31,17 +30,25 @@ const LazyImage: React.FC<LazyImageProps> = ({
 
   // Try to extract width from URL for Supabase images to optimize size
   const optimizedSrc = useMemo(() => {
-    if (src.includes("supabase.co/storage/v1/object/public/merchant")) {
-      // If width is provided, add resize parameter
-      if (width) {
+    // Optimasi hanya untuk gambar Supabase merchant/menu
+    if (
+      src.includes("supabase.co/storage/v1/object/public/merchant") ||
+      src.includes("supabase.co/storage/v1/object/public/menu")
+    ) {
+      try {
+        // Don't replace the path, keep original object URL
         const urlObj = new URL(src);
-        // Add width transform parameter for Supabase storage
-        urlObj.searchParams.set("width", width.toString());
+        // Add resize parameters if needed
+        if (width) urlObj.searchParams.set("width", width.toString());
+        if (height) urlObj.searchParams.set("height", height.toString());
         return urlObj.toString();
+      } catch (e) {
+        console.error("Error optimizing image URL:", e);
+        return src;
       }
     }
     return src;
-  }, [src, width]);
+  }, [src, width, height]);
 
   useEffect(() => {
     setImgSrc(optimizedSrc);
@@ -66,28 +73,23 @@ const LazyImage: React.FC<LazyImageProps> = ({
 
   return (
     <div className={`relative overflow-hidden ${className}`}>
-      {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-          <div className="w-5 h-5 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-        </div>
-      )}
-      {error ? (
+      <img
+        src={imgSrc}
+        alt=""
+        className={`w-full h-full object-cover transition-opacity duration-300 ${
+          isLoading ? "blur-sm opacity-60" : "opacity-100"
+        }`}
+        loading={loadingStrategy}
+        onLoad={handleLoad}
+        onError={handleError}
+        {...dimensionProps}
+        style={{ background: isLoading ? "#f3f4f6" : undefined }}
+      />
+      {/* Loading spinner dihapus */}
+      {error && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
           <ImageIcon className="h-8 w-8 text-gray-400" aria-hidden="true" />
         </div>
-      ) : (
-        <img
-          src={imgSrc}
-          alt={alt}
-          className={`w-full h-full object-cover transition-opacity duration-300 ${
-            isLoading ? "opacity-0" : "opacity-100"
-          }`}
-          loading={loadingStrategy}
-          onLoad={handleLoad}
-          onError={handleError}
-          {...dimensionProps}
-          fetchPriority={priority ? "high" : "auto"}
-        />
       )}
     </div>
   );
