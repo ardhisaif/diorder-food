@@ -8,6 +8,8 @@ interface LazyImageProps {
   fallbackSrc?: string;
   loading?: "eager" | "lazy";
   priority?: boolean;
+  width?: number;
+  height?: number;
 }
 
 const LazyImage: React.FC<LazyImageProps> = ({
@@ -16,6 +18,8 @@ const LazyImage: React.FC<LazyImageProps> = ({
   fallbackSrc = "/placeholder.svg",
   loading = "lazy",
   priority = false,
+  width,
+  height,
 }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -71,8 +75,9 @@ const LazyImage: React.FC<LazyImageProps> = ({
         onLoad={handleLoad}
         onError={handleError}
         style={{ background: isLoading ? "#f3f4f6" : undefined }}
+        width={width}
+        height={height}
       />
-      {/* Loading spinner dihapus */}
       {error && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
           <ImageIcon className="h-8 w-8 text-gray-400" aria-hidden="true" />
