@@ -74,47 +74,29 @@ const HomePage: React.FC = () => {
         const cachedMerchants = await indexedDBService.getAll("merchantInfo");
         const cachedMenu = await indexedDBService.getAll("menuItems");
 
-        // Check if we have sufficient data in the cache
-        const hasCachedData = cachedMerchants.length > 0 && cachedMenu.length > 0;
-
-        if (hasCachedData) {
-          // Use cached data
+        if (cachedMerchants.length > 0 && cachedMenu.length > 0) {
           setMerchants(cachedMerchants);
           setMenuData(cachedMenu);
           setIsLoading(false);
-
-          // Optional: You can add a timestamp check here to refresh data 
-          // if it's older than a certain threshold
         }
 
-        // Only fetch from server if no cached data or if we want to refresh in background
-        if ((!hasCachedData || shouldRefreshData()) && navigator.onLine) {
-          console.log("Fetching from server - cache data insufficient or refresh needed");
-          
+        if (navigator.onLine) {
           const { data: merchantsData, error: merchantsError } = await supabase
             .from("merchants")
             .select("*");
           const { data: menuItemsData, error: menuError } = await supabase
             .from("menu")
             .select("*");
-            
           if (merchantsError || menuError) {
             console.error(
               "Error fetching data from Supabase:",
               merchantsError || menuError
             );
-            if (!hasCachedData) {
-              // Only set loading to false if we didn't already show cached data
-              setIsLoading(false);
-            }
+            setIsLoading(false);
             return;
           }
-
-          // Update state with fresh data
           setMerchants(merchantsData || []);
           setMenuData(menuItemsData || []);
-          
-          // Update cache in IndexedDB
           if (merchantsData) {
             for (const merchant of merchantsData) {
               await indexedDBService.update("merchantInfo", merchant);
@@ -132,24 +114,7 @@ const HomePage: React.FC = () => {
         setIsLoading(false);
       }
     };
-
-    // Helper function to determine if we should refresh the data
-    // This is optional and could check a timestamp in localStorage
-    const shouldRefreshData = () => {
-      // Example: Check if data is older than 1 hour
-      const lastRefresh = localStorage.getItem('lastDataRefresh');
-      if (!lastRefresh) return true;
-      
-      const refreshThreshold = 60 * 60 * 1000; // 1 hour in milliseconds
-      return Date.now() - parseInt(lastRefresh) > refreshThreshold;
-    };
-    
     initializeData();
-    
-    // Set the refresh timestamp when we fetch from server
-    if (navigator.onLine) {
-      localStorage.setItem('lastDataRefresh', Date.now().toString());
-    }
   }, []);
 
   // Filtered products by search query
