@@ -298,8 +298,12 @@ const HomePage: React.FC = () => {
                   ? Array(4)
                       .fill(0)
                       .map((_, i) => <MerchantSkeleton key={i} />)
-                  : sortedMerchants.map((merchant: Merchant) => (
-                      <MerchantCard key={merchant.id} merchant={merchant} />
+                  : sortedMerchants.map((merchant: Merchant, index) => (
+                      <MerchantCard
+                        key={merchant.id}
+                        merchant={merchant}
+                        priority={index < 2} // Only make the first 2 merchant images high priority
+                      />
                     ))}
               </div>
             </>

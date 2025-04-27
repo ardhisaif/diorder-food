@@ -57,15 +57,31 @@
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
+    <!-- Image optimization tags -->
+    <meta name="image-rendering" content="optimizeQuality" />
+
+    <!-- Preload critical resources -->
+    <link
+      rel="preconnect"
+      href="https://sewwxvvscpmvinihyrcq.supabase.co"
+      crossorigin
+    />
+    <link rel="dns-prefetch" href="https://sewwxvvscpmvinihyrcq.supabase.co" />
+
     <script type="module" src="/src/main.tsx"></script>
 
     <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-3M4S6YNX4K"></script>
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-3M4S6YNX4K"
+    ></script>
     <script>
       window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-3M4S6YNX4K');
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "G-3M4S6YNX4K");
     </script>
   </head>
   <body>

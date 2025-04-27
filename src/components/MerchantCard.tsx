@@ -7,9 +7,13 @@ import LazyImage from "./LazyImage";
 
 interface MerchantCardProps {
   merchant: Merchant;
+  priority?: boolean; // Add priority prop for important merchant cards
 }
 
-const MerchantCard: React.FC<MerchantCardProps> = ({ merchant }) => {
+const MerchantCard: React.FC<MerchantCardProps> = ({
+  merchant,
+  priority = false,
+}) => {
   const isOpen = isCurrentlyOpen(merchant.openingHours);
 
   return (
@@ -26,6 +30,10 @@ const MerchantCard: React.FC<MerchantCardProps> = ({ merchant }) => {
             className={`w-20 h-20 rounded-lg object-cover ${
               !isOpen ? "grayscale" : ""
             }`}
+            loading="eager"
+            width={80}
+            height={80}
+            priority={priority}
           />
           <div className="ml-4 flex-1">
             <h3 className="font-bold text-lg">{merchant.name}</h3>

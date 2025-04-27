@@ -37,7 +37,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,jpg,jpeg}"],
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,jpg,jpeg,webp}"],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -46,23 +46,22 @@ export default defineConfig({
               cacheName: "google-fonts-cache",
               expiration: {
                 maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365, // <== 365 days
+                maxAgeSeconds: 60 * 60 * 24 * 365,
               },
               cacheableResponse: {
                 statuses: [0, 200],
               },
             },
           },
-          // New cache rules with 1-day expiration
           {
             urlPattern:
               /^https:\/\/.*\.supabase\.co\/storage\/v1\/object\/public\/.*/i,
-            handler: "CacheFirst",
+            handler: "StaleWhileRevalidate", // Lebih baik untuk update gambar
             options: {
               cacheName: "supabase-images",
               expiration: {
                 maxEntries: 100,
-                maxAgeSeconds: 86400, // 1 day
+                maxAgeSeconds: 86400,
               },
               cacheableResponse: {
                 statuses: [0, 200],
@@ -76,7 +75,10 @@ export default defineConfig({
               cacheName: "images-cache",
               expiration: {
                 maxEntries: 50,
-                maxAgeSeconds: 86400, // 1 day in seconds
+                maxAgeSeconds: 86400,
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
               },
             },
           },
@@ -87,7 +89,10 @@ export default defineConfig({
               cacheName: "static-resources",
               expiration: {
                 maxEntries: 30,
-                maxAgeSeconds: 86400, // 1 day in seconds
+                maxAgeSeconds: 86400,
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
               },
             },
           },
@@ -98,7 +103,7 @@ export default defineConfig({
               cacheName: "external-images",
               expiration: {
                 maxEntries: 50,
-                maxAgeSeconds: 86400, // 1 day in seconds
+                maxAgeSeconds: 86400,
               },
               cacheableResponse: {
                 statuses: [0, 200],

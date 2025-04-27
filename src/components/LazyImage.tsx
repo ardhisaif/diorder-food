@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { ImageIcon } from "lucide-react";
 
 interface LazyImageProps {
@@ -6,6 +6,10 @@ interface LazyImageProps {
   alt: string;
   className?: string;
   fallbackSrc?: string;
+  loading?: "eager" | "lazy";
+  width?: number;
+  height?: number;
+  priority?: boolean;
 }
 
 const LazyImage: React.FC<LazyImageProps> = ({
@@ -13,16 +17,37 @@ const LazyImage: React.FC<LazyImageProps> = ({
   alt,
   className = "",
   fallbackSrc = "/placeholder.svg",
+  loading = "lazy",
+  width,
+  height,
+  priority = false,
 }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
   const [imgSrc, setImgSrc] = useState<string>(src);
 
+  // If this is a priority image or first meaningful image, use eager loading
+  const loadingStrategy = priority ? "eager" : loading;
+
+  // Try to extract width from URL for Supabase images to optimize size
+  const optimizedSrc = useMemo(() => {
+    if (src.includes("supabase.co/storage/v1/object/public/merchant")) {
+      // If width is provided, add resize parameter
+      if (width) {
+        const urlObj = new URL(src);
+        // Add width transform parameter for Supabase storage
+        urlObj.searchParams.set("width", width.toString());
+        return urlObj.toString();
+      }
+    }
+    return src;
+  }, [src, width]);
+
   useEffect(() => {
-    setImgSrc(src);
+    setImgSrc(optimizedSrc);
     setIsLoading(true);
     setError(false);
-  }, [src]);
+  }, [optimizedSrc]);
 
   const handleLoad = () => {
     setIsLoading(false);
@@ -33,6 +58,11 @@ const LazyImage: React.FC<LazyImageProps> = ({
     setIsLoading(false);
     setImgSrc(fallbackSrc);
   };
+
+  // Set explicit dimensions if provided
+  const dimensionProps: React.ImgHTMLAttributes<HTMLImageElement> = {};
+  if (width) dimensionProps.width = width;
+  if (height) dimensionProps.height = height;
 
   return (
     <div className={`relative overflow-hidden ${className}`}>
@@ -52,9 +82,11 @@ const LazyImage: React.FC<LazyImageProps> = ({
           className={`w-full h-full object-cover transition-opacity duration-300 ${
             isLoading ? "opacity-0" : "opacity-100"
           }`}
-          loading="lazy"
+          loading={loadingStrategy}
           onLoad={handleLoad}
           onError={handleError}
+          {...dimensionProps}
+          fetchPriority={priority ? "high" : "auto"}
         />
       )}
     </div>
