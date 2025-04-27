@@ -3,7 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=5.0"
+    />
 
     <!-- Primary Meta Tags -->
     <title>diorder - Pesan Makanan Online</title>
@@ -28,8 +31,10 @@
     />
     <meta
       property="og:image"
-      content="https://sewwxvvscpmvinihyrcq.supabase.co/storage/v1/object/public/merchant//diorder-home.png"
+      content="https://sewwxvvscpmvinihyrcq.supabase.co/storage/v1/object/public/merchant/diorder-home.png"
     />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />
@@ -41,11 +46,20 @@
     />
     <meta
       property="twitter:image"
-      content="https://sewwxvvscpmvinihyrcq.supabase.co/storage/v1/object/public/merchant//diorder-home.png"
+      content="https://sewwxvvscpmvinihyrcq.supabase.co/storage/v1/object/public/merchant/diorder-home.png"
     />
 
     <!-- Mobile Web App -->
-    <meta name="theme-color" content="#f97316" />
+    <meta
+      name="theme-color"
+      content="#e64a19"
+      media="(prefers-color-scheme: light)"
+    />
+    <meta
+      name="theme-color"
+      content="#f97316"
+      media="(prefers-color-scheme: dark)"
+    />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta
       name="apple-mobile-web-app-status-bar-style"
@@ -68,6 +82,16 @@
     />
     <link rel="dns-prefetch" href="https://sewwxvvscpmvinihyrcq.supabase.co" />
 
+    <!-- Performance optimizations -->
+    <link rel="preload" href="/pwa-192x192.png" as="image" />
+    <link
+      rel="preload"
+      as="font"
+      href="/fonts/main-font.woff2"
+      type="font/woff2"
+      crossorigin
+    />
+
     <script type="module" src="/src/main.tsx"></script>
 
     <!-- Google tag (gtag.js) -->
@@ -86,5 +110,20 @@
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <div
+        style="
+          padding: 20px;
+          text-align: center;
+          font-family: system-ui, sans-serif;
+        "
+      >
+        <h1>JavaScript Diperlukan</h1>
+        <p>
+          Aplikasi diorder memerlukan JavaScript untuk berjalan. Mohon aktifkan
+          JavaScript di browser Anda.
+        </p>
+      </div>
+    </noscript>
   </body>
 </html>
