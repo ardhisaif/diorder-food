@@ -1,13 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import CartItem from "../components/CartItem";
 import Header from "../components/Header";
 import supabase from "../utils/supabase/client";
-import { ShoppingBag, Plus } from "lucide-react";
+import { ShoppingBag, Plus, WifiOff, AlertTriangle } from "lucide-react";
 import { isCurrentlyOpen } from "../utils/merchantUtils";
 import { Merchant } from "../types";
 import { CartItemSkeleton } from "../components/Skeletons";
+import { indexedDBService } from "../utils/indexedDB";
 
 const WHATSAPP_NUMBER = "628888465289";
 const DELIVERY_FEE = 5000;
@@ -23,26 +24,71 @@ const CartPage: React.FC = () => {
   } = useCart();
   const navigate = useNavigate();
   const [merchantsWithItems, setMerchantsWithItems] = useState<Merchant[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [isOffline, setIsOffline] = useState<boolean>(!navigator.onLine);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  // Monitor online/offline status
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
 
   useEffect(() => {
     const fetchMerchantsWithItems = async () => {
-      const { data: merchants, error } = await supabase
-        .from("merchants")
-        .select("*");
+      try {
+        setIsLoading(true);
 
-      if (error) {
-        console.error("Error fetching merchants:", error);
-        setMerchantsWithItems([]);
-      } else {
-        const filteredMerchants = merchants.filter(
-          (m) => getMerchantItems(m.id).length > 0
-        );
-        setMerchantsWithItems(filteredMerchants);
+        // Initialize IndexedDB
+        await indexedDBService.initDB();
+
+        // First try to get cached merchants to show something immediately
+        const cachedMerchants = await indexedDBService.getAll("merchantInfo");
+
+        if (cachedMerchants.length > 0) {
+          const filteredMerchants = cachedMerchants.filter(
+            (m) => getMerchantItems(m.id).length > 0
+          );
+          setMerchantsWithItems(filteredMerchants);
+        }
+
+        // Then fetch from API if online
+        if (navigator.onLine) {
+          const { data: merchants, error } = await supabase
+            .from("merchants")
+            .select("*");
+
+          if (error) {
+            console.error("Error fetching merchants:", error);
+          } else {
+            // Cache merchants in IndexedDB
+            for (const merchant of merchants) {
+              await indexedDBService.update("merchantInfo", merchant);
+            }
+
+            const filteredMerchants = merchants.filter(
+              (m) => getMerchantItems(m.id).length > 0
+            );
+            setMerchantsWithItems(filteredMerchants);
+          }
+        }
+      } catch (error) {
+        console.error("Error in fetchMerchantsWithItems:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    if (navigator.onLine) fetchMerchantsWithItems();
+    fetchMerchantsWithItems();
   }, [getMerchantItems]);
 
   const formatCurrency = (amount: number) => {
@@ -51,6 +97,51 @@ const CartPage: React.FC = () => {
       currency: "IDR",
       minimumFractionDigits: 0,
     }).format(amount);
+  };
+
+  // Memoize calculations to avoid redundant recalculations on re-renders
+  const {
+    cartEmpty,
+    hasClosedMerchants,
+    subtotal,
+    totalAmount,
+  } = useMemo(() => {
+    const isEmpty = merchantsWithItems.length === 0;
+    const openMerchants = merchantsWithItems.filter((m) =>
+      isCurrentlyOpen(m.openingHours)
+    );
+    const hasClosedMerchants = merchantsWithItems.length > openMerchants.length;
+
+    const subtotal = openMerchants.reduce((total, merchant) => {
+      return total + getMerchantTotal(merchant.id);
+    }, 0);
+
+    return {
+      cartEmpty: isEmpty,
+      hasClosedMerchants,
+      openMerchants,
+      subtotal,
+      totalAmount: subtotal + DELIVERY_FEE,
+    };
+  }, [merchantsWithItems, getMerchantTotal]);
+
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+
+    if (!customerInfo.name?.trim()) {
+      errors.name = "Nama pemesan harus diisi";
+    }
+
+    if (!customerInfo.village) {
+      errors.village = "Pilih desa pengiriman";
+    }
+
+    if (!customerInfo.addressDetail?.trim()) {
+      errors.addressDetail = "Detail alamat harus diisi";
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleInputChange = (
@@ -63,28 +154,32 @@ const CartPage: React.FC = () => {
       ...customerInfo,
       [name]: value,
     });
+
+    // Clear error when field is filled
+    if (value.trim() && formErrors[name]) {
+      setFormErrors({
+        ...formErrors,
+        [name]: "",
+      });
+    }
   };
 
   const handleCheckout = () => {
-    if (
-      !customerInfo.name ||
-      !customerInfo.village ||
-      !customerInfo.addressDetail
-    ) {
-      alert("Mohon lengkapi data pengiriman");
+    if (!validateForm()) {
       return;
     }
 
-    setIsLoading(true);
-
-    const subtotal = merchantsWithItems.reduce((total, merchant) => {
-      if (isCurrentlyOpen(merchant.openingHours)) {
-        return total + getMerchantTotal(merchant.id);
+    if (hasClosedMerchants) {
+      if (
+        !confirm(
+          "Beberapa merchant saat ini sedang tutup. Hanya makanan dari merchant yang buka yang akan diproses. Lanjutkan?"
+        )
+      ) {
+        return;
       }
-      return total;
-    }, 0);
+    }
 
-    const totalWithDelivery = subtotal + DELIVERY_FEE;
+    setIsCheckingOut(true);
 
     // Format the order message for WhatsApp
     let message = `*Pesanan Baru dari diorder*\n\n`;
@@ -105,6 +200,9 @@ const CartPage: React.FC = () => {
           message += `- ${item.name} (${item.quantity}x) = ${formatCurrency(
             item.price * item.quantity
           )}\n`;
+          if (item.notes) {
+            message += `  Catatan: ${item.notes}\n`;
+          }
         });
         message += `Subtotal: ${formatCurrency(merchantSubtotal)}\n\n`;
       }
@@ -112,7 +210,7 @@ const CartPage: React.FC = () => {
 
     message += `Subtotal Pesanan: ${formatCurrency(subtotal)}\n`;
     message += `Ongkir: ${formatCurrency(DELIVERY_FEE)}\n`;
-    message += `*Total Keseluruhan*: ${formatCurrency(totalWithDelivery)}\n\n`;
+    message += `*Total Keseluruhan*: ${formatCurrency(totalAmount)}\n\n`;
 
     if (customerInfo.notes) {
       message += `*Catatan*: ${customerInfo.notes}\n\n`;
@@ -130,7 +228,7 @@ const CartPage: React.FC = () => {
       // Create transaction data
       const transactionData = {
         transaction_id: orderId,
-        value: totalWithDelivery,
+        value: totalAmount,
         currency: "IDR",
         shipping: DELIVERY_FEE,
         items: merchantsWithItems.flatMap((merchant) => {
@@ -150,33 +248,23 @@ const CartPage: React.FC = () => {
       };
 
       try {
-        // Check if gtag function exists (window.gtag)
         if (typeof window.gtag !== "undefined") {
-          // Track the purchase event
           window.gtag("event", "purchase", transactionData);
-
-          // Also track a custom checkout completed event
           window.gtag("event", "checkout_completed", {
             customer_village: customerInfo.village,
             order_id: orderId,
-            order_value: totalWithDelivery,
+            order_value: totalAmount,
             item_count: transactionData.items.length,
             merchant_count: merchantsWithItems.filter((m) =>
               isCurrentlyOpen(m.openingHours)
             ).length,
           });
-
-          // console.log("Order tracked:", transactionData);
-        } else {
-          // console.log("Google Analytics not available");
         }
       } catch (error) {
         console.error("Error tracking checkout event:", error);
-        // Don't block checkout process if tracking fails
       }
     };
 
-    // Track the event
     trackCheckoutEvent();
 
     // Encode the message for the URL
@@ -191,7 +279,7 @@ const CartPage: React.FC = () => {
     // Clear the entire cart after checkout
     clearCart();
     navigate("/");
-    setIsLoading(false);
+    setIsCheckingOut(false);
   };
 
   const renderShippingForm = () => (
@@ -203,18 +291,27 @@ const CartPage: React.FC = () => {
           className="block text-gray-700 text-sm font-bold mb-2"
           htmlFor="name"
         >
-          Nama Pemesan
+          Nama Pemesan <span className="text-red-500">*</span>
         </label>
         <input
           type="text"
           id="name"
           name="name"
-          value={customerInfo.name}
+          value={customerInfo.name || ""}
           onChange={handleInputChange}
-          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+          className={`shadow appearance-none border ${
+            formErrors.name ? "border-red-500" : ""
+          } rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline`}
           placeholder="Masukkan nama Anda"
-          required
+          aria-required="true"
+          aria-invalid={!!formErrors.name}
+          aria-describedby={formErrors.name ? "name-error" : undefined}
         />
+        {formErrors.name && (
+          <p className="text-red-500 text-xs mt-1" id="name-error">
+            {formErrors.name}
+          </p>
+        )}
       </div>
 
       <div className="mb-4">
@@ -226,6 +323,7 @@ const CartPage: React.FC = () => {
           value="Duduksampeyan"
           className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-500 leading-tight bg-gray-100"
           disabled
+          aria-readonly="true"
         />
       </div>
 
@@ -234,15 +332,19 @@ const CartPage: React.FC = () => {
           className="block text-gray-700 text-sm font-bold mb-2"
           htmlFor="village"
         >
-          Desa
+          Desa <span className="text-red-500">*</span>
         </label>
         <select
           id="village"
           name="village"
-          value={customerInfo.village}
+          value={customerInfo.village || ""}
           onChange={handleInputChange}
-          className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-          required
+          className={`shadow border ${
+            formErrors.village ? "border-red-500" : ""
+          } rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline`}
+          aria-required="true"
+          aria-invalid={!!formErrors.village}
+          aria-describedby={formErrors.village ? "village-error" : undefined}
         >
           <option value="">Pilih Desa</option>
           {VILLAGES.map((village) => (
@@ -251,6 +353,11 @@ const CartPage: React.FC = () => {
             </option>
           ))}
         </select>
+        {formErrors.village && (
+          <p className="text-red-500 text-xs mt-1" id="village-error">
+            {formErrors.village}
+          </p>
+        )}
       </div>
 
       <div className="mb-4">
@@ -258,18 +365,29 @@ const CartPage: React.FC = () => {
           className="block text-gray-700 text-sm font-bold mb-2"
           htmlFor="addressDetail"
         >
-          Detail Alamat
+          Detail Alamat <span className="text-red-500">*</span>
         </label>
         <textarea
           id="addressDetail"
           name="addressDetail"
-          value={customerInfo.addressDetail}
+          value={customerInfo.addressDetail || ""}
           onChange={handleInputChange}
-          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+          className={`shadow appearance-none border ${
+            formErrors.addressDetail ? "border-red-500" : ""
+          } rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline`}
           placeholder="Masukkan detail alamat (RT/RW, nama gang, warna pagar, dll)"
           rows={3}
-          required
+          aria-required="true"
+          aria-invalid={!!formErrors.addressDetail}
+          aria-describedby={
+            formErrors.addressDetail ? "address-error" : undefined
+          }
         />
+        {formErrors.addressDetail && (
+          <p className="text-red-500 text-xs mt-1" id="address-error">
+            {formErrors.addressDetail}
+          </p>
+        )}
       </div>
 
       <div className="mb-4">
@@ -282,7 +400,7 @@ const CartPage: React.FC = () => {
         <textarea
           id="notes"
           name="notes"
-          value={customerInfo.notes}
+          value={customerInfo.notes || ""}
           onChange={handleInputChange}
           className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
           placeholder="Catatan tambahan untuk pesanan Anda"
@@ -292,78 +410,42 @@ const CartPage: React.FC = () => {
     </div>
   );
 
-  const renderEmptyCart = () => (
-    <div className="bg-white rounded-lg shadow-md p-8 text-center">
-      <ShoppingBag size={48} className="mx-auto text-gray-400 mb-4" />
-      <h2 className="text-xl font-bold mb-2">Keranjang Kosong</h2>
-      <p className="text-gray-600 mb-4">
-        Anda belum menambahkan item ke keranjang
-      </p>
-      <button
-        onClick={() => navigate("/")}
-        className="bg-orange-500 text-white py-2 px-4 rounded-lg font-medium"
-      >
-        Lihat Merchant
-      </button>
-    </div>
-  );
-
-  const renderMerchantItems = (merchant: Merchant) => {
-    const items = getMerchantItems(merchant.id);
-    const merchantSubtotal = getMerchantTotal(merchant.id);
-    const isOpen = isCurrentlyOpen(merchant.openingHours);
-
-    return (
-      <div
-        key={merchant.id}
-        className={`bg-white rounded-lg shadow-md p-4 mb-6 ${
-          isOpen ? "" : "filter grayscale"
-        }`}
-      >
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-bold text-lg">{merchant.name}</h2>
-          <button
-            onClick={() => navigate(`/menu/${merchant.id}`)}
-            className="text-orange-500 flex items-center text-sm"
-          >
-            <Plus size={16} className="mr-1" />
-            Tambah Menu
-          </button>
-        </div>
-
-        {items.map((item) => (
-          <CartItem key={item.id} item={item} merchantId={merchant.id} />
-        ))}
-
-        <div className="mt-4 pt-4">
-          <div className="flex justify-between mb-2">
-            <span>Subtotal</span>
-            <span className="font-bold">
-              {formatCurrency(merchantSubtotal)}
-            </span>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const cartEmpty = merchantsWithItems.length === 0;
-  const subtotal = merchantsWithItems.reduce((total, merchant) => {
-    if (isCurrentlyOpen(merchant.openingHours)) {
-      return total + getMerchantTotal(merchant.id);
-    }
-    return total;
-  }, 0);
-  const totalAmount = subtotal + DELIVERY_FEE;
-
   return (
     <div className="min-h-screen bg-gray-100 pb-32">
       <Header title="Keranjang" showBack />
 
       <div className="container mx-auto px-4 py-6">
+        {isOffline && (
+          <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4 flex items-center">
+            <WifiOff size={20} className="mr-2" aria-hidden="true" />
+            <span>
+              Anda sedang offline. Data yang ditampilkan adalah data terakhir
+              yang tersimpan.
+            </span>
+          </div>
+        )}
+
+        {hasClosedMerchants && !cartEmpty && (
+          <div className="bg-amber-100 border-l-4 border-amber-500 text-amber-700 p-4 mb-4 flex items-center">
+            <AlertTriangle size={20} className="mr-2" aria-hidden="true" />
+            <span>
+              Beberapa merchant sedang tutup. Hanya pesanan dari merchant yang
+              buka yang akan diproses.
+            </span>
+          </div>
+        )}
+
         {isLoading ? (
           <>
-            {renderShippingForm()}
+            <div className="bg-white rounded-lg shadow-md p-4 mb-6 animate-pulse">
+              <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
+              <div className="space-y-3">
+                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                <div className="h-10 bg-gray-200 rounded"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                <div className="h-10 bg-gray-200 rounded"></div>
+              </div>
+            </div>
 
             <div className="bg-white rounded-lg shadow-md p-4 mb-6 animate-pulse">
               <div className="flex items-center justify-between mb-4">
@@ -373,21 +455,84 @@ const CartPage: React.FC = () => {
 
               <CartItemSkeleton />
               <CartItemSkeleton />
-
-              <div className="mt-4 pt-4">
-                <div className="flex justify-between mb-2">
-                  <div className="h-4 bg-gray-200 rounded w-1/6"></div>
-                  <div className="h-4 bg-gray-200 rounded w-1/6"></div>
-                </div>
-              </div>
             </div>
           </>
         ) : cartEmpty ? (
-          renderEmptyCart()
+          <div className="bg-white rounded-lg shadow-md p-8 text-center">
+            <ShoppingBag
+              size={48}
+              className="mx-auto text-gray-400 mb-4"
+              aria-hidden="true"
+            />
+            <h2 className="text-xl font-bold mb-2">Keranjang Kosong</h2>
+            <p className="text-gray-600 mb-4">
+              Anda belum menambahkan item ke keranjang
+            </p>
+            <button
+              onClick={() => navigate("/")}
+              className="bg-orange-500 text-white py-2 px-4 rounded-lg font-medium"
+            >
+              Lihat Merchant
+            </button>
+          </div>
         ) : (
           <>
             {renderShippingForm()}
-            {merchantsWithItems.map(renderMerchantItems)}
+            {merchantsWithItems.map((merchant) => {
+              const items = getMerchantItems(merchant.id);
+              const merchantSubtotal = getMerchantTotal(merchant.id);
+              const isOpen = isCurrentlyOpen(merchant.openingHours);
+
+              return (
+                <div
+                  key={merchant.id}
+                  className={`bg-white rounded-lg shadow-md p-4 mb-6 ${
+                    isOpen ? "" : "filter grayscale"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center">
+                      <h2 className="font-bold text-lg">{merchant.name}</h2>
+                      {!isOpen && (
+                        <span className="ml-2 bg-red-100 text-red-600 text-xs px-2 py-1 rounded-full flex items-center">
+                          <AlertTriangle
+                            size={14}
+                            className="mr-1"
+                            aria-hidden="true"
+                          />
+                          Tutup
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => navigate(`/menu/${merchant.id}`)}
+                      className="text-orange-500 flex items-center text-sm"
+                      aria-label={`Tambah menu dari ${merchant.name}`}
+                    >
+                      <Plus size={16} className="mr-1" aria-hidden="true" />
+                      Tambah Menu
+                    </button>
+                  </div>
+
+                  {items.map((item) => (
+                    <CartItem
+                      key={item.id}
+                      item={item}
+                      merchantId={merchant.id}
+                    />
+                  ))}
+
+                  <div className="mt-4 pt-4">
+                    <div className="flex justify-between mb-2">
+                      <span>Subtotal</span>
+                      <span className="font-bold">
+                        {formatCurrency(merchantSubtotal)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </>
         )}
       </div>
@@ -417,11 +562,15 @@ const CartPage: React.FC = () => {
               <button
                 onClick={handleCheckout}
                 className="bg-orange-500 text-white px-6 py-3 rounded-lg font-bold"
-                disabled={isLoading}
+                disabled={isCheckingOut}
+                aria-busy={isCheckingOut}
               >
-                {isLoading ? (
+                {isCheckingOut ? (
                   <span className="flex items-center">
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                    <div
+                      className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"
+                      aria-hidden="true"
+                    ></div>
                     Memuat...
                   </span>
                 ) : (

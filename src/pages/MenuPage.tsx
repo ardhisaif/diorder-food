@@ -44,32 +44,36 @@ const MenuPage: React.FC = () => {
         setIsLoading(true);
         await indexedDBService.initDB();
 
-        // Ambil data dari cache lebih dulu
+        // Ambil semua menu dari cache
         const cachedMerchants = await indexedDBService.getAll("merchantInfo");
-        const cachedMerchant = cachedMerchants.find(
-          (m) => m.id === Number(merchantId)
-        );
-        const cachedMenuItems = await indexedDBService.getMenuItems(
-          Number(merchantId)
+        const cachedMenuItems = await indexedDBService.getAll("menuItems");
+
+        // Filter menu untuk merchant ini
+        const filteredMenuItems = cachedMenuItems.filter(
+          (item) => item.merchant_id === Number(merchantId)
         );
 
         // Render data cache langsung
         if (isMounted) {
-          if (cachedMerchant) {
-            setMerchant(cachedMerchant);
-            setIsOpen(isCurrentlyOpen(cachedMerchant.openingHours));
+          if (cachedMerchants.length > 0) {
+            const cachedMerchant = cachedMerchants.find(
+              (m) => m.id === Number(merchantId)
+            );
+            if (cachedMerchant) {
+              setMerchant(cachedMerchant);
+              setIsOpen(isCurrentlyOpen(cachedMerchant.openingHours));
+            }
           }
-          if (cachedMenuItems.length > 0) {
-            // Urutkan berdasarkan nama, atau field lain sesuai kebutuhan
-            const sortedMenu = [...cachedMenuItems].sort((a, b) =>
+          if (filteredMenuItems.length > 0) {
+            const sortedMenu = [...filteredMenuItems].sort((a, b) =>
               a.name.localeCompare(b.name)
             );
             setMenuItems(sortedMenu);
           }
-          setIsLoading(false); // Jangan tunggu fetch server
+          setIsLoading(false);
         }
 
-        // Fetch data terbaru dari server di background
+        // Fetch data terbaru dari server di background (opsional, untuk update cache)
         if (navigator.onLine) {
           const [merchantResponse, menuResponse] = await Promise.all([
             supabase
