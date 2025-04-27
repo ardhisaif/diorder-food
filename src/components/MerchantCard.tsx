@@ -12,7 +12,7 @@ interface MerchantCardProps {
 
 const MerchantCard: React.FC<MerchantCardProps> = ({
   merchant,
-  priority = false,
+  priority = true,
 }) => {
   const isOpen = isCurrentlyOpen(merchant.openingHours);
 
