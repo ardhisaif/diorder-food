@@ -44,16 +44,23 @@ const MenuPage: React.FC = () => {
         setIsLoading(true);
         await indexedDBService.initDB();
 
-        // Ambil semua menu dari cache
+        // Get all menu from cache
         const cachedMerchants = await indexedDBService.getAll("merchantInfo");
         const cachedMenuItems = await indexedDBService.getAll("menuItems");
 
-        // Filter menu untuk merchant ini
+        // Filter menu for this merchant
         const filteredMenuItems = cachedMenuItems.filter(
           (item) => item.merchant_id === Number(merchantId)
         );
 
-        // Render data cache langsung
+        // Check if we have sufficient data in the cache
+        const hasCachedMerchant = cachedMerchants.some(
+          (m) => m.id === Number(merchantId)
+        );
+        const hasCachedMenuItems = filteredMenuItems.length > 0;
+        const hasCompleteData = hasCachedMerchant && hasCachedMenuItems;
+
+        // Render cache data directly
         if (isMounted) {
           if (cachedMerchants.length > 0) {
             const cachedMerchant = cachedMerchants.find(
@@ -70,39 +77,69 @@ const MenuPage: React.FC = () => {
             );
             setMenuItems(sortedMenu);
           }
-          setIsLoading(false);
         }
 
-        // Fetch data terbaru dari server di background (opsional, untuk update cache)
-        if (navigator.onLine) {
-          const [merchantResponse, menuResponse] = await Promise.all([
-            supabase
-              .from("merchants")
-              .select("*")
-              .eq("id", Number(merchantId))
-              .single(),
-            supabase
-              .from("menu")
-              .select("*")
-              .eq("merchant_id", Number(merchantId))
-              .order("name", { ascending: true }), // Tambahkan order di sini
-          ]);
+        // Only fetch from server if data is missing from cache or if offline
+        if (!hasCompleteData && navigator.onLine) {
+          // Fetch missing data from server
+          const fetchPromises = [];
 
-          const { data: merchantData, error: merchantError } = merchantResponse;
-          const { data: menuData, error: menuError } = menuResponse;
+          if (!hasCachedMerchant) {
+            fetchPromises.push(
+              supabase
+                .from("merchants")
+                .select("*")
+                .eq("id", Number(merchantId))
+                .single()
+            );
+          }
 
-          if (!merchantError && merchantData && isMounted) {
-            setMerchant(merchantData);
-            setIsOpen(isCurrentlyOpen(merchantData.openingHours));
-            await indexedDBService.update("merchantInfo", merchantData);
+          if (!hasCachedMenuItems) {
+            fetchPromises.push(
+              supabase
+                .from("menu")
+                .select("*")
+                .eq("merchant_id", Number(merchantId))
+                .order("name", { ascending: true })
+            );
           }
-          if (!menuError && menuData && isMounted) {
-            setMenuItems(menuData);
-            await indexedDBService.cacheMenuItems(menuData, Number(merchantId));
+
+          if (fetchPromises.length > 0) {
+            const responses = await Promise.all(fetchPromises);
+
+            // Process merchant response if we fetched it
+            if (!hasCachedMerchant && responses[0]) {
+              const { data: merchantData, error: merchantError } = responses[0];
+              if (!merchantError && merchantData && isMounted) {
+                setMerchant(merchantData);
+                setIsOpen(isCurrentlyOpen(merchantData.openingHours));
+                await indexedDBService.update("merchantInfo", merchantData);
+              }
+            }
+
+            // Process menu response if we fetched it
+            if (!hasCachedMenuItems && responses[hasCachedMerchant ? 0 : 1]) {
+              const { data: menuData, error: menuError } =
+                responses[hasCachedMerchant ? 0 : 1];
+              if (!menuError && menuData && isMounted) {
+                setMenuItems(menuData);
+                await indexedDBService.cacheMenuItems(
+                  menuData,
+                  Number(merchantId)
+                );
+              }
+            }
           }
+        }
+
+        if (isMounted) {
+          setIsLoading(false);
         }
       } catch (error) {
         console.error("Error fetching data:", error);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
