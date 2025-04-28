@@ -35,8 +35,8 @@ const LazyImage: React.FC<LazyImageProps> = ({
         // Don't replace the path, keep original object URL
         const urlObj = new URL(src);
         return urlObj.toString();
-      } catch (e) {
-        console.error("Error optimizing image URL:", e);
+      } catch{
+        // console.error("Error optimizing image URL:", e);
         return src;
       }
     }

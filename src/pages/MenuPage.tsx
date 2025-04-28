@@ -135,8 +135,8 @@ const MenuPage: React.FC = () => {
         if (isMounted) {
           setIsLoading(false);
         }
-      } catch (error) {
-        console.error("Error fetching data:", error);
+      } catch {
+        // console.error("Error fetching data:", error);
         if (isMounted) {
           setIsLoading(false);
         }

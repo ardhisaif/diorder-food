@@ -336,7 +336,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
           .single();
 
         if (error) {
-          console.error("Error fetching merchant info:", error);
+          // console.error("Error fetching merchant info:", error);
           setMerchantInfo(null);
         } else {
           setMerchantInfo(data);
@@ -365,7 +365,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
     const fetchMerchantsData = async () => {
       const { data, error } = await supabase.from("merchants").select("*");
       if (error) {
-        console.error("Error fetching merchants data:", error);
+        // console.error("Error fetching merchants data:", error);
         setMerchantsData([]);
       } else {
         setMerchantsData(data || []);

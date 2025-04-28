@@ -26,7 +26,7 @@ const Header: React.FC<HeaderProps> = ({ title, showBack = false }) => {
           )}
           <h1 className="text-xl font-bold">{title}</h1>
         </div>
-        <button onClick={handleWhatsAppChat} className="relative">
+        <button onClick={handleWhatsAppChat} className="relative" aria-label="Buka Chat">
           <MessageCircle size={24} />
         </button>
       </div>

@@ -31,14 +31,14 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({
           .single();
 
         if (error) {
-          console.error("Error fetching service status:", error);
+          // console.error("Error fetching service status:", error);
           // Default to open if there's an error
           setIsServiceOpen(true);
         } else {
           setIsServiceOpen(data.is_open);
         }
-      } catch (error) {
-        console.error("Error fetching service status:", error);
+      } catch {
+        // console.error("Error fetching service status:", error);
         setIsServiceOpen(true);
       } finally {
         setLoading(false);

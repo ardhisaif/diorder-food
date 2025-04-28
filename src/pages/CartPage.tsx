@@ -32,7 +32,7 @@ const CartPage: React.FC = () => {
         .select("*");
 
       if (error) {
-        console.error("Error fetching merchants:", error);
+        // console.error("Error fetching merchants:", error);
         setMerchantsWithItems([]);
       } else {
         const filteredMerchants = merchants.filter(
@@ -170,8 +170,8 @@ const CartPage: React.FC = () => {
         } else {
           // console.log("Google Analytics not available");
         }
-      } catch (error) {
-        console.error("Error tracking checkout event:", error);
+      } catch {
+        // console.error("Error tracking checkout event:", error);
         // Don't block checkout process if tracking fails
       }
     };

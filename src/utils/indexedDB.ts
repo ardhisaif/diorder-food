@@ -21,9 +21,9 @@ class IndexedDBService {
           // Check if the error is due to version mismatch
           const error = (event.target as IDBOpenDBRequest).error;
           if (error && error.name === "VersionError") {
-            console.warn(
-              "IndexedDB version mismatch. Deleting database and trying again..."
-            );
+            // console.warn(
+            //   "IndexedDB version mismatch. Deleting database and trying again..."
+            // );
             // Delete the database and try again
             const deleteRequest = indexedDB.deleteDatabase(DB_NAME);
             deleteRequest.onsuccess = () => {
@@ -32,11 +32,11 @@ class IndexedDBService {
               setTimeout(() => this.initDB().then(resolve).catch(reject), 100);
             };
             deleteRequest.onerror = () => {
-              console.error("Could not delete database", deleteRequest.error);
+              // console.error("Could not delete database", deleteRequest.error);
               reject(deleteRequest.error);
             };
           } else {
-            console.error("Database error:", event);
+            // console.error("Database error:", event);
             reject(request.error);
           }
         };
@@ -99,8 +99,8 @@ class IndexedDBService {
       const store = this.getStore(storeName);
       const request = store.getAll();
 
-      request.onerror = (event) => {
-        console.error("Database error:", event);
+      request.onerror = () => {
+        // console.error("Database error:", event);
         reject(request.error);
       };
       request.onsuccess = () => resolve(request.result);
@@ -116,8 +116,8 @@ class IndexedDBService {
       const store = this.getStore(storeName, "readwrite");
       const request = store.add(item);
 
-      request.onerror = (event) => {
-        console.error("Database error:", event);
+      request.onerror = () => {
+        // console.error("Database error:", event);
         reject(request.error);
       };
       request.onsuccess = () => resolve();
@@ -133,8 +133,8 @@ class IndexedDBService {
       const store = this.getStore(storeName, "readwrite");
       const request = store.put(item);
 
-      request.onerror = (event) => {
-        console.error("Database error:", event);
+      request.onerror = () => {
+        // console.error("Database error:", event);
         reject(request.error);
       };
       request.onsuccess = () => resolve();
@@ -150,8 +150,8 @@ class IndexedDBService {
       const store = this.getStore(storeName, "readwrite");
       const request = store.delete(id);
 
-      request.onerror = (event) => {
-        console.error("Database error:", event);
+      request.onerror = () => {
+        // console.error("Database error:", event);
         reject(request.error);
       };
       request.onsuccess = () => resolve();
@@ -213,8 +213,8 @@ class IndexedDBService {
       const range = IDBKeyRange.only(merchantId);
       const request = index.getAll(range);
 
-      request.onerror = (event) => {
-        console.error("Database error:", event);
+      request.onerror = () => {
+        // console.error("Database error:", event);
         reject(request.error);
       };
       request.onsuccess = () => resolve(request.result);

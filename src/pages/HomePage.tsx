@@ -89,7 +89,7 @@ const HomePage: React.FC = () => {
 
         // Only fetch from server if no cached data or if we want to refresh in background
         if ((!hasCachedData || shouldRefreshData()) && navigator.onLine) {
-          console.log("Fetching from server - cache data insufficient or refresh needed");
+          // console.log("Fetching from server - cache data insufficient or refresh needed");
           
           const { data: merchantsData, error: merchantsError } = await supabase
             .from("merchants")
@@ -99,10 +99,10 @@ const HomePage: React.FC = () => {
             .select("*");
             
           if (merchantsError || menuError) {
-            console.error(
-              "Error fetching data from Supabase:",
-              merchantsError || menuError
-            );
+            // console.error(
+            //   "Error fetching data from Supabase:",
+            //   merchantsError || menuError
+            // );
             if (!hasCachedData) {
               // Only set loading to false if we didn't already show cached data
               setIsLoading(false);
@@ -126,8 +126,8 @@ const HomePage: React.FC = () => {
             }
           }
         }
-      } catch (error) {
-        console.error("Error initializing data:", error);
+      } catch {
+        // console.error("Error initializing data:", error);
       } finally {
         setIsLoading(false);
       }
