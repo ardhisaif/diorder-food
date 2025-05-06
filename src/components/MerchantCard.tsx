@@ -8,13 +8,16 @@ import LazyImage from "./LazyImage";
 interface MerchantCardProps {
   merchant: Merchant;
   priority?: boolean;
+  isServiceOpen?: boolean;
 }
 
 const MerchantCard: React.FC<MerchantCardProps> = ({
   merchant,
   priority = true,
+  isServiceOpen = true,
 }) => {
   const isOpen = isCurrentlyOpen(merchant.openingHours);
+  const shouldBeGrayscale = !isOpen || !isServiceOpen;
 
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden mb-4">
@@ -28,7 +31,7 @@ const MerchantCard: React.FC<MerchantCardProps> = ({
             }
             alt=""
             className={`w-20 h-20 rounded-lg object-cover ${
-              !isOpen ? "grayscale" : ""
+              shouldBeGrayscale ? "grayscale" : ""
             }`}
             loading="eager"
             priority={priority}
@@ -43,7 +46,9 @@ const MerchantCard: React.FC<MerchantCardProps> = ({
         </div>
         <div
           className={`${
-            isOpen ? "bg-orange-500 text-white" : "bg-gray-500 text-white"
+            isOpen && isServiceOpen
+              ? "bg-orange-500 text-white"
+              : "bg-gray-500 text-white"
           } py-2 px-4 text-center font-medium flex items-center justify-center`}
         >
           Lihat Menu <ChevronRight size={16} className="ml-1" />

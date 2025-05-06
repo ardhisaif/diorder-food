@@ -478,6 +478,7 @@ const HomePage: React.FC = () => {
                         <MerchantCard
                           merchant={merchant}
                           priority={index < 2} // Only make the first 2 merchant images high priority
+                          isServiceOpen={isServiceOpen}
                         />
                       </div>
                     ))}
