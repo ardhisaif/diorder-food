@@ -1,13 +1,13 @@
 import React from "react";
 import { Merchant } from "../types";
 import { Link } from "react-router-dom";
-import { MapPin, ChevronRight, Clock } from "lucide-react";
+import { MapPin, ChevronRight } from "lucide-react";
 import { isCurrentlyOpen } from "../utils/merchantUtils";
 import LazyImage from "./LazyImage";
 
 interface MerchantCardProps {
   merchant: Merchant;
-  priority?: boolean; // Add priority prop for important merchant cards
+  priority?: boolean;
 }
 
 const MerchantCard: React.FC<MerchantCardProps> = ({
@@ -33,18 +33,11 @@ const MerchantCard: React.FC<MerchantCardProps> = ({
             loading="eager"
             priority={priority}
           />
-          <div className="ml-4 flex-1">
+          <div className="ml-4 flex-1 flex flex-col justify-center">
             <h3 className="font-bold text-lg">{merchant.name}</h3>
             <div className="flex items-center text-gray-600 text-sm mt-1">
               <MapPin size={14} className="mr-1" />
               <span>{merchant.address}</span>
-            </div>
-            <div className="flex items-center text-sm mt-1">
-              <Clock size={14} className="mr-1" />
-              <span className={isOpen ? "text-green-600" : "text-red-600"}>
-                {isOpen ? "Buka" : "Tutup"} • {merchant.openingHours.open} -{" "}
-                {merchant.openingHours.close}
-              </span>
             </div>
           </div>
         </div>

@@ -5,7 +5,7 @@ import MenuItem from "../components/MenuItem";
 import Header from "../components/Header";
 import { useCart } from "../context/CartContext";
 import { useSettings } from "../context/SettingsContext";
-import { ShoppingBag, Clock, WifiOff } from "lucide-react";
+import { ShoppingBag, WifiOff } from "lucide-react";
 import { isCurrentlyOpen } from "../utils/merchantUtils";
 import supabase from "../utils/supabase/client";
 import { indexedDBService } from "../utils/indexedDB";
@@ -341,13 +341,13 @@ const MenuPage: React.FC = () => {
       <div className="bg-white rounded-lg shadow-md p-4 mb-6">
         <h2 className="font-bold text-lg">{merchant?.name}</h2>
         <p className="text-gray-600 text-sm">{merchant?.address}</p>
-        <div className="flex items-center mt-2">
+        {/* <div className="flex items-center mt-2">
           <Clock size={16} className="mr-1" />
           <span className={isOpen ? "text-green-600" : "text-red-600"}>
             {isOpen ? "Buka" : "Tutup"} • {merchant?.openingHours.open} -{" "}
             {merchant?.openingHours?.close}
           </span>
-        </div>
+        </div> */}
       </div>
     );
   };
