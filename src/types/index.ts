@@ -7,6 +7,7 @@ export interface Merchant {
     open: string;
     close: string;
   };
+  updated_at: string
 }
 
 export interface MenuItem {

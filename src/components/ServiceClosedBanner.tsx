@@ -13,8 +13,8 @@ const ServiceClosedBanner: React.FC<ServiceClosedBannerProps> = ({
     >
       <div className="flex items-center">
         <p>
-          <span className="font-bold">Layanan Sedang Tutup.</span> Anda hanya
-          dapat melihat menu. Pemesanan tidak dapat dilakukan saat ini. Layanan akan segera dibuka di bulan Mei.
+          <span className="font-bold">Layanan Sedang Tutup. </span> Anda hanya
+          dapat melihat menu. Pemesanan tidak dapat dilakukan saat ini. 
         </p>
       </div>
     </div>

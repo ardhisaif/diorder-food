@@ -11,6 +11,15 @@ import supabase from "../utils/supabase/client";
 import { indexedDBService } from "../utils/indexedDB";
 import ServiceClosedBanner from "../components/ServiceClosedBanner";
 import { CategorySkeleton } from "../components/Skeletons";
+import {
+  shouldFetchMerchantData,
+  updateMerchantTimestamp,
+  getLastFetchTime,
+  updateLastFetchTime,
+} from "../utils/cacheUtils";
+
+// Cache duration in milliseconds (5 minutes)
+const CACHE_DURATION = 5 * 60 * 1000;
 
 const MenuPage: React.FC = () => {
   const { merchantId } = useParams<{ merchantId: string }>();
@@ -79,54 +88,99 @@ const MenuPage: React.FC = () => {
           }
         }
 
-        // Only fetch from server if data is missing from cache or if offline
-        if (!hasCompleteData && navigator.onLine) {
-          // Fetch missing data from server
-          const fetchPromises = [];
+        // If we have complete data, reduce loading time
+        if (hasCompleteData) {
+          setIsLoading(false);
+        }
 
-          if (!hasCachedMerchant) {
-            fetchPromises.push(
-              supabase
-                .from("merchants")
-                .select("*")
-                .eq("id", Number(merchantId))
-                .single()
-            );
-          }
+        // Check if we should do a timestamp check
+        const lastFetchTime = getLastFetchTime(Number(merchantId));
+        const shouldCheckTimestamp =
+          !lastFetchTime || Date.now() - lastFetchTime > CACHE_DURATION;
 
-          if (!hasCachedMenuItems) {
-            fetchPromises.push(
-              supabase
-                .from("menu")
-                .select("*")
-                .eq("merchant_id", Number(merchantId))
-                .order("name", { ascending: true })
-            );
-          }
+        // Only check for updates if we're online and it's time to check
+        if (navigator.onLine && (shouldCheckTimestamp || !hasCompleteData)) {
+          // Do a lightweight check for updated_at timestamp before fetching full data
+          const { data: merchantTimestampData } = await supabase
+            .from("merchants")
+            .select("updated_at")
+            .eq("id", Number(merchantId))
+            .single();
 
-          if (fetchPromises.length > 0) {
-            const responses = await Promise.all(fetchPromises);
+          const serverTimestamp = merchantTimestampData?.updated_at;
+          const shouldFetch = shouldFetchMerchantData(
+            Number(merchantId),
+            serverTimestamp
+          );
 
-            // Process merchant response if we fetched it
-            if (!hasCachedMerchant && responses[0]) {
-              const { data: merchantData, error: merchantError } = responses[0];
-              if (!merchantError && merchantData && isMounted) {
-                setMerchant(merchantData);
-                setIsOpen(isCurrentlyOpen(merchantData.openingHours));
-                await indexedDBService.update("merchantInfo", merchantData);
-              }
+          // Update the last fetch time regardless of whether we fetch or not
+          updateLastFetchTime(Number(merchantId));
+
+          // Only fetch from server if data is missing from cache or if timestamp indicates fresh data
+          if (shouldFetch || !hasCompleteData) {
+            // console.log("Fetching fresh merchant data based on updated timestamp");
+
+            // Fetch missing data from server
+            const fetchPromises = [];
+
+            if (!hasCachedMerchant || shouldFetch) {
+              fetchPromises.push(
+                supabase
+                  .from("merchants")
+                  .select("*")
+                  .eq("id", Number(merchantId))
+                  .single()
+              );
             }
 
-            // Process menu response if we fetched it
-            if (!hasCachedMenuItems && responses[hasCachedMerchant ? 0 : 1]) {
-              const { data: menuData, error: menuError } =
-                responses[hasCachedMerchant ? 0 : 1];
-              if (!menuError && menuData && isMounted) {
-                setMenuItems(menuData);
-                await indexedDBService.cacheMenuItems(
-                  menuData,
-                  Number(merchantId)
-                );
+            if (!hasCachedMenuItems || shouldFetch) {
+              fetchPromises.push(
+                supabase
+                  .from("menu")
+                  .select("*")
+                  .eq("merchant_id", Number(merchantId))
+                  .order("name", { ascending: true })
+              );
+            }
+
+            if (fetchPromises.length > 0) {
+              const responses = await Promise.all(fetchPromises);
+
+              // Process merchant response if we fetched it
+              if ((!hasCachedMerchant || shouldFetch) && responses[0]) {
+                const { data: merchantData, error: merchantError } =
+                  responses[0];
+                if (!merchantError && merchantData && isMounted) {
+                  setMerchant(merchantData);
+                  setIsOpen(isCurrentlyOpen(merchantData.openingHours));
+                  await indexedDBService.update("merchantInfo", merchantData);
+
+                  // Update the merchant timestamp
+                  if (merchantData.updated_at) {
+                    updateMerchantTimestamp(
+                      Number(merchantId),
+                      merchantData.updated_at
+                    );
+                  }
+                }
+              }
+
+              // Process menu response if we fetched it
+              const menuResponseIndex =
+                !hasCachedMerchant || shouldFetch ? 1 : 0;
+              if (
+                (!hasCachedMenuItems || shouldFetch) &&
+                responses[menuResponseIndex]
+              ) {
+                const { data: menuData, error: menuError } =
+                  responses[menuResponseIndex];
+                if (!menuError && menuData && isMounted) {
+                  setMenuItems(menuData);
+                  await indexedDBService.cacheMenuItems(
+                    menuData,
+                    Number(merchantId)
+                  );
+                }
               }
             }
           }
@@ -146,6 +200,98 @@ const MenuPage: React.FC = () => {
     fetchMerchantAndMenu();
     return () => {
       isMounted = false;
+    };
+  }, [merchantId]);
+
+  // Add real-time subscriptions for the specific merchant and its menu items
+  useEffect(() => {
+    if (!merchantId) return;
+
+    // Set up real-time subscription to the specific merchant
+    const merchantSubscription = supabase
+      .channel(`merchant_${merchantId}_changes`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "merchants",
+          filter: `id=eq.${merchantId}`,
+        },
+        async (payload) => {
+          const updatedMerchant = payload.new as Merchant;
+
+          // Update IndexedDB
+          await indexedDBService.update("merchantInfo", updatedMerchant);
+
+          // Update state
+          setMerchant(updatedMerchant);
+
+          // Update isOpen status
+          setIsOpen(isCurrentlyOpen(updatedMerchant.openingHours));
+
+          // Update merchant timestamp
+          if (updatedMerchant.updated_at) {
+            updateMerchantTimestamp(
+              Number(merchantId),
+              updatedMerchant.updated_at
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    // Set up real-time subscription to menu items for this merchant
+    const menuSubscription = supabase
+      .channel(`menu_${merchantId}_changes`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "menu",
+          filter: `merchant_id=eq.${merchantId}`,
+        },
+        async (payload) => {
+          // Handle menu item changes
+          if (
+            payload.eventType === "UPDATE" ||
+            payload.eventType === "INSERT"
+          ) {
+            const updatedMenuItem = payload.new as MenuItemType;
+
+            // Update state by replacing the item or adding it if it's new
+            setMenuItems((prevItems) => {
+              const index = prevItems.findIndex(
+                (item) => item.id === updatedMenuItem.id
+              );
+              if (index >= 0) {
+                const newItems = [...prevItems];
+                newItems[index] = updatedMenuItem;
+                return newItems;
+              } else {
+                return [...prevItems, updatedMenuItem];
+              }
+            });
+
+            // Update IndexedDB
+            await indexedDBService.update("menuItems", updatedMenuItem);
+          } else if (payload.eventType === "DELETE") {
+            const deletedMenuItemId = payload.old.id;
+
+            // Remove from state
+            setMenuItems((prevItems) =>
+              prevItems.filter((item) => item.id !== deletedMenuItemId)
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscriptions when component unmounts or merchantId changes
+    return () => {
+      merchantSubscription.unsubscribe();
+      menuSubscription.unsubscribe();
     };
   }, [merchantId]);
 

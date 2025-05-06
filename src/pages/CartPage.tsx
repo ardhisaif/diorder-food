@@ -8,6 +8,8 @@ import { ShoppingBag, Plus } from "lucide-react";
 import { isCurrentlyOpen } from "../utils/merchantUtils";
 import { Merchant } from "../types";
 import { CartItemSkeleton } from "../components/Skeletons";
+import { indexedDBService } from "../utils/indexedDB";
+import { useSettings } from "../context/SettingsContext";
 
 const WHATSAPP_NUMBER = "628888465289";
 const DELIVERY_FEE = 5000;
@@ -22,8 +24,16 @@ const CartPage: React.FC = () => {
     clearCart,
   } = useCart();
   const navigate = useNavigate();
+  const { isServiceOpen } = useSettings();
   const [merchantsWithItems, setMerchantsWithItems] = useState<Merchant[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Redirect ke home jika layanan tutup
+  useEffect(() => {
+    if (!isServiceOpen) {
+      navigate("/", { replace: true });
+    }
+  }, [isServiceOpen, navigate]);
 
   useEffect(() => {
     const fetchMerchantsWithItems = async () => {
@@ -32,7 +42,6 @@ const CartPage: React.FC = () => {
         .select("*");
 
       if (error) {
-        // console.error("Error fetching merchants:", error);
         setMerchantsWithItems([]);
       } else {
         const filteredMerchants = merchants.filter(
@@ -43,6 +52,41 @@ const CartPage: React.FC = () => {
     };
 
     if (navigator.onLine) fetchMerchantsWithItems();
+  }, [getMerchantItems]);
+
+  // Add real-time subscriptions for merchants to ensure cart data stays updated
+  useEffect(() => {
+    const merchantsSubscription = supabase
+      .channel("merchants_cart_changes")
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "merchants" },
+        async (payload) => {
+          const updatedMerchant = payload.new as Merchant;
+
+          // Update merchant in IndexedDB
+          await indexedDBService.update("merchantInfo", updatedMerchant);
+
+          // Only update state if this merchant is in the cart
+          setMerchantsWithItems((prevMerchants) => {
+            const index = prevMerchants.findIndex(
+              (m) => m.id === updatedMerchant.id
+            );
+            if (index >= 0 && getMerchantItems(updatedMerchant.id).length > 0) {
+              const newMerchants = [...prevMerchants];
+              newMerchants[index] = updatedMerchant;
+              return newMerchants;
+            }
+            return prevMerchants;
+          });
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscription when component unmounts
+    return () => {
+      merchantsSubscription.unsubscribe();
+    };
   }, [getMerchantItems]);
 
   const formatCurrency = (amount: number) => {
@@ -165,13 +209,8 @@ const CartPage: React.FC = () => {
               isCurrentlyOpen(m.openingHours)
             ).length,
           });
-
-          // console.log("Order tracked:", transactionData);
-        } else {
-          // console.log("Google Analytics not available");
         }
       } catch {
-        // console.error("Error tracking checkout event:", error);
         // Don't block checkout process if tracking fails
       }
     };

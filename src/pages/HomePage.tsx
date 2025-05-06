@@ -19,6 +19,16 @@ import supabase from "../utils/supabase/client";
 import { indexedDBService } from "../utils/indexedDB";
 import ServiceClosedBanner from "../components/ServiceClosedBanner";
 import { MerchantSkeleton, ProductSkeleton } from "../components/Skeletons";
+import {
+  shouldFetchFreshData,
+  updateStoredTimestamp,
+  TIMESTAMP_KEYS,
+} from "../utils/cacheUtils";
+// import { getLastFetchTime, updateLastFetchTime } from "../utils/cacheUtils";
+
+// Cache duration in milliseconds (5 minutes)
+const CACHE_DURATION = 5 * 60 * 1000;
+const HOME_LAST_FETCH_KEY = "diorder_home_last_fetch";
 
 // Memoized components
 const MerchantCard = React.memo(MerchantCardOrig);
@@ -42,7 +52,7 @@ const HomePage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isOffline, setIsOffline] = useState<boolean>(!navigator.onLine);
   const { getItemCount, getSubtotal } = useCart();
-  const { isServiceOpen } = useSettings();
+  const { isServiceOpen, refreshServiceStatus } = useSettings();
   const navigate = useNavigate();
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
@@ -75,55 +85,83 @@ const HomePage: React.FC = () => {
         const cachedMenu = await indexedDBService.getAll("menuItems");
 
         // Check if we have sufficient data in the cache
-        const hasCachedData = cachedMerchants.length > 0 && cachedMenu.length > 0;
+        const hasCachedData =
+          cachedMerchants.length > 0 && cachedMenu.length > 0;
 
         if (hasCachedData) {
           // Use cached data
           setMerchants(cachedMerchants);
           setMenuData(cachedMenu);
           setIsLoading(false);
-
-          // Optional: You can add a timestamp check here to refresh data 
-          // if it's older than a certain threshold
         }
 
-        // Only fetch from server if no cached data or if we want to refresh in background
-        if ((!hasCachedData || shouldRefreshData()) && navigator.onLine) {
-          // console.log("Fetching from server - cache data insufficient or refresh needed");
-          
-          const { data: merchantsData, error: merchantsError } = await supabase
-            .from("merchants")
-            .select("*");
-          const { data: menuItemsData, error: menuError } = await supabase
-            .from("menu")
-            .select("*");
-            
-          if (merchantsError || menuError) {
-            // console.error(
-            //   "Error fetching data from Supabase:",
-            //   merchantsError || menuError
-            // );
-            if (!hasCachedData) {
-              // Only set loading to false if we didn't already show cached data
-              setIsLoading(false);
-            }
-            return;
-          }
+        // Check if we should do a timestamp check based on time since last fetch
+        const lastFetchTime = localStorage.getItem(HOME_LAST_FETCH_KEY);
+        const shouldCheckTimestamp =
+          !lastFetchTime ||
+          Date.now() - parseInt(lastFetchTime) > CACHE_DURATION;
 
-          // Update state with fresh data
-          setMerchants(merchantsData || []);
-          setMenuData(menuItemsData || []);
-          
-          // Update cache in IndexedDB
-          if (merchantsData) {
-            for (const merchant of merchantsData) {
-              await indexedDBService.update("merchantInfo", merchant);
+        // Only check for updates if we're online and it's time to check or no cached data
+        if (navigator.onLine && (shouldCheckTimestamp || !hasCachedData)) {
+          // Do a lightweight check for updated_at timestamp before fetching full data
+          const { data: settingsData } = await supabase
+            .from("settings")
+            .select("updated_at")
+            .single();
+
+          const serverTimestamp = settingsData?.updated_at;
+          const shouldFetch = shouldFetchFreshData(
+            TIMESTAMP_KEYS.SETTINGS,
+            serverTimestamp
+          );
+
+          // Update the last fetch time regardless of whether we fetch or not
+          localStorage.setItem(HOME_LAST_FETCH_KEY, Date.now().toString());
+
+          // Only fetch from server if needed based on timestamp or missing cache
+          if (shouldFetch || !hasCachedData) {
+            // console.log("Fetching fresh data from server based on updated timestamp");
+
+            const { data: merchantsData, error: merchantsError } =
+              await supabase.from("merchants").select("*");
+            const { data: menuItemsData, error: menuError } = await supabase
+              .from("menu")
+              .select("*");
+
+            if (merchantsError || menuError) {
+              // console.error(
+              //   "Error fetching data from Supabase:",
+              //   merchantsError || menuError
+              // );
+              if (!hasCachedData) {
+                // Only set loading to false if we didn't already show cached data
+                setIsLoading(false);
+              }
+              return;
             }
-          }
-          if (menuItemsData) {
-            for (const menuItem of menuItemsData) {
-              await indexedDBService.update("menuItems", menuItem);
+
+            // Update state with fresh data
+            setMerchants(merchantsData || []);
+            setMenuData(menuItemsData || []);
+
+            // Update cache in IndexedDB
+            if (merchantsData) {
+              for (const merchant of merchantsData) {
+                await indexedDBService.update("merchantInfo", merchant);
+              }
             }
+            if (menuItemsData) {
+              for (const menuItem of menuItemsData) {
+                await indexedDBService.update("menuItems", menuItem);
+              }
+            }
+
+            // Store the latest timestamp for future comparison
+            if (serverTimestamp) {
+              updateStoredTimestamp(TIMESTAMP_KEYS.SETTINGS, serverTimestamp);
+            }
+          } else {
+            // console.log("Using cached data - server data hasn't changed");
           }
         }
       } catch {
@@ -133,23 +171,100 @@ const HomePage: React.FC = () => {
       }
     };
 
-    // Helper function to determine if we should refresh the data
-    // This is optional and could check a timestamp in localStorage
-    const shouldRefreshData = () => {
-      // Example: Check if data is older than 1 hour
-      const lastRefresh = localStorage.getItem('lastDataRefresh');
-      if (!lastRefresh) return true;
-      
-      const refreshThreshold = 60 * 60 * 1000; // 1 hour in milliseconds
-      return Date.now() - parseInt(lastRefresh) > refreshThreshold;
-    };
-    
     initializeData();
-    
-    // Set the refresh timestamp when we fetch from server
-    if (navigator.onLine) {
-      localStorage.setItem('lastDataRefresh', Date.now().toString());
-    }
+  }, []);
+
+  // Add real-time subscriptions for merchants and menu data
+  useEffect(() => {
+    // Set up real-time subscription to merchants table
+    const merchantsSubscription = supabase
+      .channel("merchants_changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "merchants" },
+        async (payload) => {
+          // Handle merchant updates
+          if (
+            payload.eventType === "UPDATE" ||
+            payload.eventType === "INSERT"
+          ) {
+            const updatedMerchant = payload.new as Merchant;
+
+            // Update IndexedDB
+            await indexedDBService.update("merchantInfo", updatedMerchant);
+
+            // Update state by replacing the merchant or adding it if it's new
+            setMerchants((prevMerchants) => {
+              const index = prevMerchants.findIndex(
+                (m) => m.id === updatedMerchant.id
+              );
+              if (index >= 0) {
+                const newMerchants = [...prevMerchants];
+                newMerchants[index] = updatedMerchant;
+                return newMerchants;
+              } else {
+                return [...prevMerchants, updatedMerchant];
+              }
+            });
+          } else if (payload.eventType === "DELETE") {
+            const deletedMerchantId = payload.old.id;
+
+            // Remove from state
+            setMerchants((prevMerchants) =>
+              prevMerchants.filter((m) => m.id !== deletedMerchantId)
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    // Set up real-time subscription to menu table
+    const menuSubscription = supabase
+      .channel("menu_changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "menu" },
+        async (payload) => {
+          // Handle menu item updates
+          if (
+            payload.eventType === "UPDATE" ||
+            payload.eventType === "INSERT"
+          ) {
+            const updatedMenuItem = payload.new as MenuItem;
+
+            // Update IndexedDB
+            await indexedDBService.update("menuItems", updatedMenuItem);
+
+            // Update state
+            setMenuData((prevMenuItems) => {
+              const index = prevMenuItems.findIndex(
+                (item) => item.id === updatedMenuItem.id
+              );
+              if (index >= 0) {
+                const newMenuItems = [...prevMenuItems];
+                newMenuItems[index] = updatedMenuItem;
+                return newMenuItems;
+              } else {
+                return [...prevMenuItems, updatedMenuItem];
+              }
+            });
+          } else if (payload.eventType === "DELETE") {
+            const deletedMenuItemId = payload.old.id;
+
+            // Remove from state
+            setMenuData((prevMenuItems) =>
+              prevMenuItems.filter((item) => item.id !== deletedMenuItemId)
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscriptions when component unmounts
+    return () => {
+      merchantsSubscription.unsubscribe();
+      menuSubscription.unsubscribe();
+    };
   }, []);
 
   // Filtered products by search query
@@ -263,6 +378,27 @@ const HomePage: React.FC = () => {
     setTouchEnd(null);
   }, [touchStart, touchEnd, activeTab]);
 
+  // Handler untuk tombol keranjang
+  const handleCartClick = useCallback(async () => {
+    const open = await refreshServiceStatus();
+    if (!open) {
+      return;
+    }
+    navigate("/cart");
+  }, [refreshServiceStatus, navigate]);
+
+  // Handler untuk klik merchant card (lihat menu)
+  const handleMerchantMenuClick = useCallback(
+    async (merchantId: number) => {
+      const open = await refreshServiceStatus();
+      if (!open) {
+        return;
+      }
+      navigate(`/menu/${merchantId}`);
+    },
+    [refreshServiceStatus, navigate]
+  );
+
   return (
     <div className="min-h-screen bg-gray-100 pb-24">
       <Header title="diorder" />
@@ -334,11 +470,16 @@ const HomePage: React.FC = () => {
                       .fill(0)
                       .map((_, i) => <MerchantSkeleton key={i} />)
                   : sortedMerchants.map((merchant: Merchant, index) => (
-                      <MerchantCard
+                      <div
                         key={merchant.id}
-                        merchant={merchant}
-                        priority={index < 2} // Only make the first 2 merchant images high priority
-                      />
+                        onClick={() => handleMerchantMenuClick(merchant.id)}
+                        style={{ cursor: "pointer" }}
+                      >
+                        <MerchantCard
+                          merchant={merchant}
+                          priority={index < 2} // Only make the first 2 merchant images high priority
+                        />
+                      </div>
                     ))}
               </div>
             </>
@@ -413,7 +554,7 @@ const HomePage: React.FC = () => {
                 </div>
               </div>
               <button
-                onClick={() => navigate("/cart")}
+                onClick={handleCartClick}
                 className="bg-orange-500 text-white px-6 py-3 rounded-lg font-bold flex items-center"
               >
                 <ShoppingBag className="mr-2" size={20} />
