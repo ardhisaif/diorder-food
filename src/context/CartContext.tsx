@@ -76,12 +76,14 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
 }) => {
   const [state, setState] = useState<CartState>(getInitialState);
   const [isClearingCart, setIsClearingCart] = useState(false);
+  const [isDBReady, setIsDBReady] = useState(false); // Tambahkan state penanda DB siap
 
   // Initialize IndexedDB when the component mounts
   useEffect(() => {
     const initDB = async () => {
       try {
         await indexedDBService.initDB();
+        setIsDBReady(true); // DB siap
         // Load cart data from IndexedDB
         const cartItems = await indexedDBService.getCart();
         if (cartItems.length > 0) {
@@ -106,16 +108,25 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
   }, []);
 
   useEffect(() => {
+    if (!isDBReady) return; // Jangan sync sebelum DB siap
     if (isClearingCart) return; // Jangan sync saat clearCart
     const syncToIndexedDB = async () => {
       try {
-        // Flatten cart items from all merchants
+        // Ambil semua item cart lama di IndexedDB
+        const oldItems = await indexedDBService.getCart();
+
+        // Hapus semua item cart lama di IndexedDB
+        for (const item of oldItems) {
+          await indexedDBService.removeFromCart(item.id);
+        }
+
+        // Flatten cart items from all merchants (state terbaru)
         const allItems = Object.entries(state.items).flatMap(
           ([merchantId, items]) =>
             items.map((item) => ({ ...item, merchant_id: Number(merchantId) }))
         );
 
-        // Clear existing cart items and add new ones
+        // Tambahkan semua item cart terbaru ke IndexedDB
         for (const item of allItems) {
           await indexedDBService.addToCart(item);
         }
@@ -125,7 +136,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
     };
 
     syncToIndexedDB();
-  }, [state, isClearingCart]);
+  }, [state, isClearingCart, isDBReady]);
 
   // Effect to save customer info to localStorage whenever it changes
   useEffect(() => {
