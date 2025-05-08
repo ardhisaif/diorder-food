@@ -131,12 +131,19 @@ const CartPage: React.FC = () => {
     const totalWithDelivery = subtotal + DELIVERY_FEE;
 
     // Format the order message for WhatsApp
-    let message = `*Pesanan Baru dari diorder*\n\n`;
-    message += `*Nama*: ${customerInfo.name}\n`;
-    message += `*Alamat*:\n`;
+    let message = `*PESANAN BARU*\n`;
+    message += `━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+    // Informasi Pelanggan
+    message += `*INFORMASI PELANGGAN*\n`;
+    message += `Nama: ${customerInfo.name}\n`;
     message += `Kecamatan: Duduksampeyan\n`;
     message += `Desa: ${customerInfo.village}\n`;
     message += `Detail Alamat: ${customerInfo.addressDetail}\n\n`;
+
+    // Detail Pesanan
+    message += `*DETAIL PESANAN*\n`;
+    message += `━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
 
     // Add orders from each merchant
     merchantsWithItems.forEach((merchant) => {
@@ -144,25 +151,65 @@ const CartPage: React.FC = () => {
         const items = getMerchantItems(merchant.id);
         const merchantSubtotal = getMerchantTotal(merchant.id);
 
-        message += `*Detail Pesanan dari ${merchant.name}*:\n`;
+        message += `*${merchant.name}*\n`;
         items.forEach((item) => {
-          message += `- ${item.name} (${item.quantity}x) = ${formatCurrency(
-            item.price * item.quantity
-          )}\n`;
+          message += `• ${item.name} (${item.quantity}x)\n`;
+
+          // Add base price
+          message += `  Harga: ${formatCurrency(item.price)}\n`;
+
+          // Add level if selected
+          if (item.selectedOptions?.level) {
+            message += `  Level: ${
+              item.selectedOptions.level.label
+            } (+${formatCurrency(item.selectedOptions.level.extraPrice)})\n`;
+          }
+
+          // Add toppings if any
+          if (
+            item.selectedOptions?.toppings &&
+            item.selectedOptions.toppings.length > 0
+          ) {
+            message += `  Topping:\n`;
+            item.selectedOptions.toppings.forEach((topping) => {
+              message += `    - ${topping.label} (+${formatCurrency(
+                topping.extraPrice
+              )})\n`;
+            });
+          }
+
+          // Add subtotal for this item
+          const itemTotal =
+            item.price * item.quantity +
+            (item.selectedOptions?.level?.extraPrice || 0) * item.quantity +
+            (item.selectedOptions?.toppings?.reduce(
+              (sum, t) => sum + t.extraPrice,
+              0
+            ) || 0) *
+              item.quantity;
+
+          message += `  Total: ${formatCurrency(itemTotal)}\n\n`;
         });
-        message += `Subtotal: ${formatCurrency(merchantSubtotal)}\n\n`;
+        message += `Subtotal ${merchant.name}: ${formatCurrency(
+          merchantSubtotal
+        )}\n\n`;
       }
     });
 
-    message += `Subtotal Pesanan: ${formatCurrency(subtotal)}\n`;
+    // Ringkasan Pembayaran
+    message += `*RINGKASAN PEMBAYARAN*\n`;
+    message += `━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+    message += `Subtotal: ${formatCurrency(subtotal)}\n`;
     message += `Ongkir: ${formatCurrency(DELIVERY_FEE)}\n`;
-    message += `*Total Keseluruhan*: ${formatCurrency(totalWithDelivery)}\n\n`;
+    message += `*TOTAL: ${formatCurrency(totalWithDelivery)}*\n\n`;
 
     if (customerInfo.notes) {
-      message += `*Catatan*: ${customerInfo.notes}\n\n`;
+      message += `*CATATAN*\n`;
+      message += `━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+      message += `${customerInfo.notes}\n\n`;
     }
 
-    message += `Terima kasih telah memesan!`;
+    message += `Terima kasih telah memesan! 🙏`;
 
     // Track checkout event with Google Analytics
     const trackCheckoutEvent = () => {

@@ -322,7 +322,19 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
 
       // Delete each item
       for (const item of cartItems) {
-        await indexedDBService.removeFromCart(item.id);
+        const itemKey = item.selectedOptions
+          ? `${item.selectedOptions.level?.value || ""}-${
+              item.selectedOptions.toppings
+                ?.map((t) => t.value)
+                .sort()
+                .join("-") || ""
+            }`
+          : "default";
+        await indexedDBService.removeFromCart(
+          item.id,
+          item.merchant_id,
+          itemKey
+        );
       }
     } catch (error) {
       console.error("Error clearing cart in IndexedDB:", error);

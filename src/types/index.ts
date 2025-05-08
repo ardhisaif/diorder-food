@@ -22,11 +22,6 @@ export interface MenuItem {
     value: string;
     extraPrice: number;
   }[];
-}
-
-export interface CartItem extends MenuItem {
-  quantity: number;
-  notes?: string;
   selectedOptions?: {
     level?: {
       label: string;
@@ -39,6 +34,11 @@ export interface CartItem extends MenuItem {
       extraPrice: number;
     }[];
   };
+}
+
+export interface CartItem extends MenuItem {
+  quantity: number;
+  notes?: string;
 }
 
 export interface CustomerInfo {
