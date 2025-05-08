@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { MenuItem } from "../types";
-import { X } from "lucide-react";
+import { X, Plus, Minus } from "lucide-react";
 
 interface OptionsPopupProps {
   item: MenuItem;
@@ -73,30 +73,35 @@ const OptionsPopup: React.FC<OptionsPopupProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg w-full max-w-md mx-4">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
+      <div className="bg-white rounded-2xl w-full max-w-md mx-4 animate-slideUp">
         <div className="p-4 border-b flex justify-between items-center">
           <h3 className="font-bold text-lg">{item.name}</h3>
-          <button onClick={onClose} className="text-gray-500">
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700 transition-colors"
+          >
             <X size={24} />
           </button>
         </div>
 
-        <div className="p-4">
+        <div className="p-4 max-h-[80vh] overflow-y-auto">
           {/* Level Selection */}
-          <div className="mb-4">
-            <h4 className="font-medium mb-2">Pilih Level Pedas</h4>
-            <div className="grid grid-cols-2 gap-2">
+          <div className="mb-6">
+            <h4 className="font-medium mb-3 text-gray-800">
+              Pilih Level Pedas
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {item.options
                 ?.filter((opt) => opt.value.startsWith("level"))
                 .map((option) => (
                   <button
                     key={option.value}
                     onClick={() => setSelectedLevel(option)}
-                    className={`p-2 border rounded-lg text-sm ${
+                    className={`p-3 border rounded-xl text-sm transition-all duration-200 ${
                       selectedLevel?.value === option.value
-                        ? "border-orange-500 bg-orange-50 text-orange-500"
-                        : "border-gray-200"
+                        ? "border-orange-500 bg-orange-50 text-orange-500 shadow-sm"
+                        : "border-gray-200 hover:border-orange-300"
                     }`}
                   >
                     {option.label}
@@ -106,23 +111,25 @@ const OptionsPopup: React.FC<OptionsPopupProps> = ({
           </div>
 
           {/* Toppings Selection */}
-          <div className="mb-4">
-            <h4 className="font-medium mb-2">Pilih Topping (Opsional)</h4>
-            <div className="grid grid-cols-2 gap-2">
+          <div className="mb-6">
+            <h4 className="font-medium mb-3 text-gray-800">
+              Pilih Topping (Opsional)
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {item.options
                 ?.filter((opt) => !opt.value.startsWith("level"))
                 .map((option) => (
                   <button
                     key={option.value}
                     onClick={() => toggleTopping(option)}
-                    className={`p-2 border rounded-lg text-sm flex justify-between items-center ${
+                    className={`p-3 border rounded-xl text-sm flex justify-between items-center transition-all duration-200 ${
                       selectedToppings.some((t) => t.value === option.value)
-                        ? "border-orange-500 bg-orange-50 text-orange-500"
-                        : "border-gray-200"
+                        ? "border-orange-500 bg-orange-50 text-orange-500 shadow-sm"
+                        : "border-gray-200 hover:border-orange-300"
                     }`}
                   >
-                    <span>{option.label}</span>
-                    <span className="text-xs">
+                    <span className="truncate mr-2">{option.label}</span>
+                    <span className="text-xs font-medium whitespace-nowrap">
                       +{formatCurrency(option.extraPrice)}
                     </span>
                   </button>
@@ -131,41 +138,39 @@ const OptionsPopup: React.FC<OptionsPopupProps> = ({
           </div>
 
           {/* Quantity Selection */}
-          <div className="mb-4">
-            <h4 className="font-medium mb-2">Jumlah</h4>
-            <div className="flex items-center">
+          <div className="mb-6">
+            <h4 className="font-medium mb-3 text-gray-800">Jumlah</h4>
+            <div className="flex items-center justify-center max-w-[200px] mx-auto">
               <button
                 onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
-                className="w-8 h-8 flex items-center justify-center border rounded-l-lg"
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-orange-500 text-white hover:bg-orange-600 transition-colors"
               >
-                -
+                <Minus size={16} />
               </button>
-              <div className="flex-1 text-center border-t border-b py-2">
-                {quantity}
-              </div>
+              <span className="mx-4 font-medium text-lg">{quantity}</span>
               <button
                 onClick={() => setQuantity((prev) => prev + 1)}
-                className="w-8 h-8 flex items-center justify-center border rounded-r-lg"
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-orange-500 text-white hover:bg-orange-600 transition-colors"
               >
-                +
+                <Plus size={16} />
               </button>
             </div>
           </div>
 
           {/* Total and Add to Cart Button */}
-          <div className="mt-6">
+          <div className="mt-8">
             <div className="flex justify-between items-center mb-4">
-              <span className="font-medium">Total</span>
-              <span className="font-bold text-lg">
+              <span className="font-medium text-gray-800">Total</span>
+              <span className="font-bold text-xl text-orange-500">
                 {formatCurrency(calculateTotal())}
               </span>
             </div>
             <button
               onClick={handleAddToCart}
               disabled={!selectedLevel}
-              className={`w-full py-3 rounded-lg font-bold ${
+              className={`w-full py-3.5 rounded-xl font-bold transition-all duration-200 ${
                 selectedLevel
-                  ? "bg-orange-500 text-white"
+                  ? "bg-orange-500 text-white hover:bg-orange-600 shadow-md"
                   : "bg-gray-200 text-gray-500"
               }`}
             >
