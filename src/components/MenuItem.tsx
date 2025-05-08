@@ -78,7 +78,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ item, merchantId, isOpen }) => {
                       onClick={() => setShowOptions(true)}
                       className="bg-orange-500 text-white px-4 py-1 rounded-lg text-sm"
                     >
-                      {quantity > 0 ? `${quantity} item` : "Pesan"}
+                      Pesan
                     </button>
                   ) : (
                     <>

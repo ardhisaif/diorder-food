@@ -17,6 +17,7 @@ export interface MenuItem {
   price: number;
   image: string;
   category: string;
+  is_active: boolean;
   options?: {
     label: string;
     value: string;

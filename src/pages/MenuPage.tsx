@@ -139,6 +139,7 @@ const MenuPage: React.FC = () => {
                   .from("menu")
                   .select("*")
                   .eq("merchant_id", Number(merchantId))
+                  .eq("is_active", true)
                   .order("name", { ascending: true })
               );
             }

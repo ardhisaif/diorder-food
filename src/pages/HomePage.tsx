@@ -126,7 +126,8 @@ const HomePage: React.FC = () => {
               await supabase.from("merchants").select("*");
             const { data: menuItemsData, error: menuError } = await supabase
               .from("menu")
-              .select("*");
+              .select("*")
+              .eq("is_active", true);
 
             if (merchantsError || menuError) {
               // console.error(
