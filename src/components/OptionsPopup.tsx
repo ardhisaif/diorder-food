@@ -84,7 +84,7 @@ const OptionsPopup: React.FC<OptionsPopupProps> = ({
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
       <div className="bg-white rounded-2xl w-full max-w-md mx-4 animate-slideUp">
         <div className="p-4 border-b flex justify-between items-center">
-          <h3 className="font-bold text-lg">{item.name}</h3>
+          {/* <h3 className="font-bold text-lg">{item.name}</h3> */}
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 transition-colors"
@@ -94,6 +94,46 @@ const OptionsPopup: React.FC<OptionsPopupProps> = ({
         </div>
 
         <div className="p-4 max-h-[80vh] overflow-y-auto">
+          {/* Product Info Layout */}
+          <div className="flex gap-4 mb-6 items-center">
+            {/* Product Image */}
+            <img
+              src={
+                item.image?.startsWith("http") ? item.image : "/placeholder.svg"
+              }
+              alt={item.name}
+              className="w-20 h-20 object-cover rounded-lg border bg-gray-100 flex-shrink-0"
+            />
+            {/* Info */}
+            <div className="flex-1 min-w-0">
+              <div className="font-bold text-base sm:text-lg text-black truncate">
+                {item.name}
+              </div>
+              <div className="flex items-center justify-between mt-2">
+                <span className="font-bold text-orange-500 text-lg">
+                  {formatCurrency(item.price)}
+                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
+                    className="w-6 h-6 flex items-center justify-center border border-orange-400 text-orange-500 rounded-full transition-colors hover:bg-orange-50"
+                  >
+                    <Minus size={18} />
+                  </button>
+                  <span className="mx-2 font-medium text-base w-4 text-center select-none">
+                    {quantity}
+                  </span>
+                  <button
+                    onClick={() => setQuantity((prev) => prev + 1)}
+                    className="w-6 h-6 flex items-center justify-center bg-orange-500 text-white rounded-full transition-colors hover:bg-orange-600"
+                  >
+                    <Plus size={18} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Level Selection */}
           <div className="mb-6">
             <h4 className="font-medium mb-3 text-gray-800">
@@ -192,26 +232,6 @@ const OptionsPopup: React.FC<OptionsPopupProps> = ({
                   </button>
                 </>
               )}
-            </div>
-          </div>
-
-          {/* Quantity Selection */}
-          <div className="mb-6">
-            <h4 className="font-medium mb-3 text-gray-800">Jumlah</h4>
-            <div className="flex items-center justify-center max-w-[200px] mx-auto">
-              <button
-                onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
-                className="w-8 h-8 flex items-center justify-center rounded-full bg-orange-500 text-white hover:bg-orange-600 transition-colors"
-              >
-                <Minus size={16} />
-              </button>
-              <span className="mx-4 font-medium text-lg">{quantity}</span>
-              <button
-                onClick={() => setQuantity((prev) => prev + 1)}
-                className="w-8 h-8 flex items-center justify-center rounded-full bg-orange-500 text-white hover:bg-orange-600 transition-colors"
-              >
-                <Plus size={16} />
-              </button>
             </div>
           </div>
 
