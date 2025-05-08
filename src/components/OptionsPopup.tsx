@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { MenuItem } from "../types";
-import { X, Plus, Minus } from "lucide-react";
+import { X, Plus, Minus, ChevronDown, ChevronUp } from "lucide-react";
 
 interface OptionsPopupProps {
   item: MenuItem;
@@ -29,6 +29,7 @@ const OptionsPopup: React.FC<OptionsPopupProps> = ({
   const [selectedToppings, setSelectedToppings] = useState<
     { label: string; value: string; extraPrice: number }[]
   >([]);
+  const [showAllToppings, setShowAllToppings] = useState(false);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -72,6 +73,13 @@ const OptionsPopup: React.FC<OptionsPopupProps> = ({
     });
   };
 
+  const spiceLevels =
+    item.options?.filter((opt) => opt.value.startsWith("level")) || [];
+  const toppings =
+    item.options?.filter((opt) => !opt.value.startsWith("level")) || [];
+  const initialToppings = toppings.slice(0, 3);
+  const remainingToppings = toppings.slice(3);
+
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
       <div className="bg-white rounded-2xl w-full max-w-md mx-4 animate-slideUp">
@@ -91,22 +99,29 @@ const OptionsPopup: React.FC<OptionsPopupProps> = ({
             <h4 className="font-medium mb-3 text-gray-800">
               Pilih Level Pedas
             </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {item.options
-                ?.filter((opt) => opt.value.startsWith("level"))
-                .map((option) => (
-                  <button
-                    key={option.value}
-                    onClick={() => setSelectedLevel(option)}
-                    className={`p-3 border rounded-xl text-sm transition-all duration-200 ${
-                      selectedLevel?.value === option.value
-                        ? "border-orange-500 bg-orange-50 text-orange-500 shadow-sm"
-                        : "border-gray-200 hover:border-orange-300"
-                    }`}
-                  >
-                    {option.label}
-                  </button>
+            <div className="relative">
+              <select
+                value={selectedLevel?.value || ""}
+                onChange={(e) => {
+                  const selected = spiceLevels.find(
+                    (level) => level.value === e.target.value
+                  );
+                  setSelectedLevel(selected || null);
+                }}
+                className="w-full p-3 border border-gray-200 rounded-xl text-sm appearance-none bg-white focus:outline-none focus:border-orange-500 transition-colors"
+              >
+                <option value="" disabled>
+                  Pilih Level Pedas
+                </option>
+                {spiceLevels.map((level) => (
+                  <option key={level.value} value={level.value}>
+                    {level.label}
+                  </option>
                 ))}
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                <ChevronDown size={20} className="text-gray-500" />
+              </div>
             </div>
           </div>
 
@@ -115,25 +130,68 @@ const OptionsPopup: React.FC<OptionsPopupProps> = ({
             <h4 className="font-medium mb-3 text-gray-800">
               Pilih Topping (Opsional)
             </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {item.options
-                ?.filter((opt) => !opt.value.startsWith("level"))
-                .map((option) => (
+            <div className="space-y-2">
+              {initialToppings.map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => toggleTopping(option)}
+                  className={`w-full p-3 border rounded-xl text-sm flex justify-between items-center transition-all duration-200 ${
+                    selectedToppings.some((t) => t.value === option.value)
+                      ? "border-orange-500 bg-orange-50 text-orange-500 shadow-sm"
+                      : "border-gray-200 hover:border-orange-300"
+                  }`}
+                >
+                  <span className="truncate mr-2">{option.label}</span>
+                  <span className="text-xs font-medium whitespace-nowrap">
+                    +{formatCurrency(option.extraPrice)}
+                  </span>
+                </button>
+              ))}
+
+              {remainingToppings.length > 0 && (
+                <>
+                  {showAllToppings && (
+                    <div className="space-y-2 mt-2">
+                      {remainingToppings.map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() => toggleTopping(option)}
+                          className={`w-full p-3 border rounded-xl text-sm flex justify-between items-center transition-all duration-200 ${
+                            selectedToppings.some(
+                              (t) => t.value === option.value
+                            )
+                              ? "border-orange-500 bg-orange-50 text-orange-500 shadow-sm"
+                              : "border-gray-200 hover:border-orange-300"
+                          }`}
+                        >
+                          <span className="truncate mr-2">{option.label}</span>
+                          <span className="text-xs font-medium whitespace-nowrap">
+                            +{formatCurrency(option.extraPrice)}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   <button
-                    key={option.value}
-                    onClick={() => toggleTopping(option)}
-                    className={`p-3 border rounded-xl text-sm flex justify-between items-center transition-all duration-200 ${
-                      selectedToppings.some((t) => t.value === option.value)
-                        ? "border-orange-500 bg-orange-50 text-orange-500 shadow-sm"
-                        : "border-gray-200 hover:border-orange-300"
-                    }`}
+                    onClick={() => setShowAllToppings(!showAllToppings)}
+                    className="w-full p-2 text-sm text-orange-500 hover:text-orange-600 flex items-center justify-center gap-1"
                   >
-                    <span className="truncate mr-2">{option.label}</span>
-                    <span className="text-xs font-medium whitespace-nowrap">
-                      +{formatCurrency(option.extraPrice)}
-                    </span>
+                    {showAllToppings ? (
+                      <>
+                        <span>Tampilkan Lebih Sedikit</span>
+                        <ChevronUp size={16} />
+                      </>
+                    ) : (
+                      <>
+                        <span>
+                          Lihat {remainingToppings.length} Topping Lainnya
+                        </span>
+                        <ChevronDown size={16} />
+                      </>
+                    )}
                   </button>
-                ))}
+                </>
+              )}
             </div>
           </div>
 
