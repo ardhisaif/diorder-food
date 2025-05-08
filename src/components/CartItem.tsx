@@ -10,7 +10,7 @@ interface CartItemProps {
 }
 
 const CartItem: React.FC<CartItemProps> = ({ item, merchantId }) => {
-  const { updateQuantity, updateItemNotes } = useCart();
+  const { updateQuantity } = useCart();
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -20,72 +20,137 @@ const CartItem: React.FC<CartItemProps> = ({ item, merchantId }) => {
     }).format(amount);
   };
 
-  const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    updateItemNotes(item.id, e.target.value, merchantId);
+  const calculateItemTotal = () => {
+    let total = item.price * item.quantity;
+
+    // Add level price if exists
+    if (item.selectedOptions?.level) {
+      total += item.selectedOptions.level.extraPrice * item.quantity;
+    }
+
+    // Add toppings price if exists
+    if (item.selectedOptions?.toppings) {
+      item.selectedOptions.toppings.forEach((topping) => {
+        total += topping.extraPrice * item.quantity;
+      });
+    }
+
+    return total;
   };
 
-  const decreaseQuantity = () => {
-    updateQuantity(item.id, item.quantity - 1, merchantId);
-  };
+  const renderPriceBreakdown = () => {
+    const breakdown = [];
 
-  const increaseQuantity = () => {
-    updateQuantity(item.id, item.quantity + 1, merchantId);
+    // Base price
+    breakdown.push(
+      <div key="base" className="flex justify-between text-sm">
+        <span>Harga Dasar</span>
+        <span>{formatCurrency(item.price)}</span>
+      </div>
+    );
+
+    // Level price if exists
+    if (item.selectedOptions?.level) {
+      breakdown.push(
+        <div key="level" className="flex justify-between text-sm">
+          <span>{item.selectedOptions.level.label}</span>
+          <span>{formatCurrency(item.selectedOptions.level.extraPrice)}</span>
+        </div>
+      );
+    }
+
+    // Toppings prices if exist
+    if (item.selectedOptions?.toppings) {
+      item.selectedOptions.toppings.forEach((topping, index) => {
+        breakdown.push(
+          <div
+            key={`topping-${index}`}
+            className="flex justify-between text-sm"
+          >
+            <span>+ {topping.label}</span>
+            <span>{formatCurrency(topping.extraPrice)}</span>
+          </div>
+        );
+      });
+    }
+
+    // Subtotal per item
+    const subtotalPerItem =
+      item.price +
+      (item.selectedOptions?.level?.extraPrice || 0) +
+      (item.selectedOptions?.toppings?.reduce(
+        (sum, t) => sum + t.extraPrice,
+        0
+      ) || 0);
+
+    breakdown.push(
+      <div
+        key="subtotal"
+        className="flex justify-between text-sm font-medium mt-1 pt-1 border-t"
+      >
+        <span>Subtotal per item</span>
+        <span>{formatCurrency(subtotalPerItem)}</span>
+      </div>
+    );
+
+    // Total for all items
+    breakdown.push(
+      <div key="total" className="flex justify-between text-sm font-bold mt-1">
+        <span>Total ({item.quantity} item)</span>
+        <span>{formatCurrency(calculateItemTotal())}</span>
+      </div>
+    );
+
+    return breakdown;
   };
 
   return (
-    <div className="flex flex-row items-start py-4 border-b">
-      <div className="relative w-20 h-20 min-w-20 rounded-md overflow-hidden bg-gray-100 flex items-center justify-center self-center">
-        <LazyImage
-          src={item.image.startsWith("http") ? item.image : "/placeholder.svg"}
-          alt={`Image of ${item.name}`}
-          className="w-full h-full object-cover"
-        />
-      </div>
-      <div className="ml-4 flex-1 w-full">
+    <div className="flex items-center py-3 border-b">
+      <LazyImage
+        src={item.image.startsWith("http") ? item.image : "/placeholder.svg"}
+        alt=""
+        className="w-16 h-16 object-cover rounded-lg"
+      />
+      <div className="ml-3 flex-1">
         <h3 className="font-medium">{item.name}</h3>
-        <div className="flex flex-row items-center justify-between mt-2 gap-2">
-          <div className="text-orange-500 font-bold">
-            {formatCurrency(item.price)}
+
+        {/* Display selected options */}
+        {item.selectedOptions && (
+          <div className="text-sm text-gray-600 mt-1">
+            {item.selectedOptions.level && (
+              <div>{item.selectedOptions.level.label}</div>
+            )}
+            {item.selectedOptions.toppings &&
+              item.selectedOptions.toppings.length > 0 && (
+                <div className="text-xs">
+                  Topping:{" "}
+                  {item.selectedOptions.toppings.map((t) => t.label).join(", ")}
+                </div>
+              )}
           </div>
-          <div className="flex items-center">
-            <button
-              onClick={decreaseQuantity}
-              aria-label={`Decrease quantity of ${item.name}`}
-              className="w-6 h-6 flex items-center justify-center rounded-full bg-orange-500 text-white focus:outline-none focus:ring-2 focus:ring-orange-300 focus:ring-offset-1"
-            >
-              <Minus size={16} />
-            </button>
-            <span className="mx-3 w-6 text-center font-medium">
-              {item.quantity}
-            </span>
-            <button
-              onClick={increaseQuantity}
-              aria-label={`Increase quantity of ${item.name}`}
-              className="w-6 h-6 flex items-center justify-center rounded-full bg-orange-500 text-white focus:outline-none focus:ring-2 focus:ring-orange-300 focus:ring-offset-1"
-            >
-              <Plus size={16} />
-            </button>
-          </div>
-        </div>
-        <div className="mt-1 text-sm text-gray-700">
-          Subtotal:{" "}
-          <span className="font-medium">
-            {formatCurrency(item.price * item.quantity)}
-          </span>
-        </div>
-        <div className="mt-2">
-          <label htmlFor={`notes-${item.id}`} className="sr-only">
-            Catatan untuk {item.name}
-          </label>
-          <textarea
-            id={`notes-${item.id}`}
-            value={item.notes}
-            onChange={handleNotesChange}
-            className="w-full p-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-orange-500 text-sm"
-            placeholder="Catatan tambahan untuk produk ini"
-            rows={2}
-            aria-label={`Notes for ${item.name}`}
-          />
+        )}
+
+        {/* Price Breakdown */}
+        <div className="mt-2 text-gray-600">{renderPriceBreakdown()}</div>
+
+        <div className="flex justify-end items-center mt-2">
+          <button
+            onClick={() =>
+              updateQuantity(item.id, item.quantity - 1, merchantId)
+            }
+            className="w-6 h-6 flex items-center justify-center rounded-full bg-orange-500 text-white"
+          >
+            <Minus size={14} />
+          </button>
+          <span className="mx-2 font-medium">{item.quantity}</span>
+          <button
+            onClick={() =>
+              updateQuantity(item.id, item.quantity + 1, merchantId)
+            }
+            className="w-6 h-6 flex items-center justify-center rounded-full bg-orange-500 text-white"
+          >
+            <Plus size={14} />
+          </button>
         </div>
       </div>
     </div>

@@ -7,7 +7,7 @@ export interface Merchant {
     open: string;
     close: string;
   };
-  updated_at: string
+  updated_at: string;
 }
 
 export interface MenuItem {
@@ -17,11 +17,28 @@ export interface MenuItem {
   price: number;
   image: string;
   category: string;
+  options?: {
+    label: string;
+    value: string;
+    extraPrice: number;
+  }[];
 }
 
 export interface CartItem extends MenuItem {
   quantity: number;
   notes?: string;
+  selectedOptions?: {
+    level?: {
+      label: string;
+      value: string;
+      extraPrice: number;
+    };
+    toppings?: {
+      label: string;
+      value: string;
+      extraPrice: number;
+    }[];
+  };
 }
 
 export interface CustomerInfo {

@@ -16,7 +16,7 @@ const CUSTOMER_INFO_STORAGE_KEY = "diorder_customer_info";
 
 interface CartContextType {
   cartItems: CartItem[];
-  addToCart: (item: MenuItem, merchantId: number) => void;
+  addToCart: (item: MenuItem, merchantId: number, quantity?: number) => void;
   removeFromCart: (itemId: number, merchantId: number) => void;
   updateQuantity: (
     itemId: number,
@@ -76,14 +76,15 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
 }) => {
   const [state, setState] = useState<CartState>(getInitialState);
   const [isClearingCart, setIsClearingCart] = useState(false);
-  const [isDBReady, setIsDBReady] = useState(false); // Tambahkan state penanda DB siap
+  const [isDBReady, setIsDBReady] = useState(false);
 
-  // Initialize IndexedDB when the component mounts
+  // Initialize IndexedDB and load cart data
   useEffect(() => {
     const initDB = async () => {
       try {
         await indexedDBService.initDB();
-        setIsDBReady(true); // DB siap
+        setIsDBReady(true);
+
         // Load cart data from IndexedDB
         const cartItems = await indexedDBService.getCart();
         if (cartItems.length > 0) {
@@ -107,26 +108,43 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
     initDB();
   }, []);
 
+  // Sync cart data to IndexedDB whenever it changes
   useEffect(() => {
-    if (!isDBReady) return; // Jangan sync sebelum DB siap
-    if (isClearingCart) return; // Jangan sync saat clearCart
+    if (!isDBReady) return;
+    if (isClearingCart) return;
+
     const syncToIndexedDB = async () => {
       try {
-        // Ambil semua item cart lama di IndexedDB
-        const oldItems = await indexedDBService.getCart();
-
-        // Hapus semua item cart lama di IndexedDB
-        for (const item of oldItems) {
-          await indexedDBService.removeFromCart(item.id);
-        }
-
-        // Flatten cart items from all merchants (state terbaru)
+        // Get all current cart items
         const allItems = Object.entries(state.items).flatMap(
           ([merchantId, items]) =>
-            items.map((item) => ({ ...item, merchant_id: Number(merchantId) }))
+            items.map((item) => ({
+              ...item,
+              merchant_id: Number(merchantId),
+              // Ensure selectedOptions is properly structured
+              selectedOptions: item.selectedOptions
+                ? {
+                    level: item.selectedOptions.level
+                      ? {
+                          label: item.selectedOptions.level.label,
+                          value: item.selectedOptions.level.value,
+                          extraPrice: item.selectedOptions.level.extraPrice,
+                        }
+                      : undefined,
+                    toppings: item.selectedOptions.toppings?.map((topping) => ({
+                      label: topping.label,
+                      value: topping.value,
+                      extraPrice: topping.extraPrice,
+                    })),
+                  }
+                : undefined,
+            }))
         );
 
-        // Tambahkan semua item cart terbaru ke IndexedDB
+        // Clear existing cart in IndexedDB
+        await indexedDBService.clearCart();
+
+        // Add all current items to IndexedDB
         for (const item of allItems) {
           await indexedDBService.addToCart(item);
         }
@@ -136,7 +154,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
     };
 
     syncToIndexedDB();
-  }, [state, isClearingCart, isDBReady]);
+  }, [state.items, isDBReady, isClearingCart]);
 
   // Effect to save customer info to localStorage whenever it changes
   useEffect(() => {
@@ -152,20 +170,58 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
     }
   }, [state.customerInfo]);
 
-  const addToCart = (item: MenuItem, merchantId: number) => {
+  const addToCart = (
+    item: MenuItem,
+    merchantId: number,
+    quantity: number = 1
+  ) => {
     setState((prevState) => {
       const merchantItems = prevState.items[merchantId] || [];
-      const existingItem = merchantItems.find(
-        (cartItem) => cartItem.id === item.id
-      );
+
+      // Create a unique identifier for the item based on its options
+      const itemKey = item.selectedOptions
+        ? `${item.id}-${item.selectedOptions.level?.value}-${
+            item.selectedOptions.toppings
+              ?.map((t) => t.value)
+              .sort()
+              .join("-") || ""
+          }`
+        : item.id.toString();
+
+      const existingItem = merchantItems.find((cartItem) => {
+        if (!item.selectedOptions && !cartItem.selectedOptions) {
+          return cartItem.id === item.id;
+        }
+        if (item.selectedOptions && cartItem.selectedOptions) {
+          const cartItemKey = `${cartItem.id}-${
+            cartItem.selectedOptions.level?.value
+          }-${
+            cartItem.selectedOptions.toppings
+              ?.map((t) => t.value)
+              .sort()
+              .join("-") || ""
+          }`;
+          return cartItemKey === itemKey;
+        }
+        return false;
+      });
 
       const updatedMerchantItems = existingItem
-        ? merchantItems.map((cartItem) =>
-            cartItem.id === item.id
-              ? { ...cartItem, quantity: cartItem.quantity + 1 }
-              : cartItem
-          )
-        : [...merchantItems, { ...item, quantity: 1, notes: "" }];
+        ? merchantItems.map((cartItem) => {
+            const cartItemKey = cartItem.selectedOptions
+              ? `${cartItem.id}-${cartItem.selectedOptions.level?.value}-${
+                  cartItem.selectedOptions.toppings
+                    ?.map((t) => t.value)
+                    .sort()
+                    .join("-") || ""
+                }`
+              : cartItem.id.toString();
+
+            return cartItemKey === itemKey
+              ? { ...cartItem, quantity: cartItem.quantity + quantity }
+              : cartItem;
+          })
+        : [...merchantItems, { ...item, quantity, notes: "" }];
 
       return {
         ...prevState,
@@ -315,10 +371,24 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   const getMerchantTotal = (merchantId: number) => {
-    return (state.items[merchantId] || []).reduce(
-      (total, item) => total + item.price * item.quantity,
-      0
-    );
+    const merchantItems = state.items[merchantId] || [];
+    return merchantItems.reduce((total, item) => {
+      let itemTotal = item.price * item.quantity;
+
+      // Add level price if exists
+      if (item.selectedOptions?.level) {
+        itemTotal += item.selectedOptions.level.extraPrice * item.quantity;
+      }
+
+      // Add toppings price if exists
+      if (item.selectedOptions?.toppings) {
+        item.selectedOptions.toppings.forEach((topping) => {
+          itemTotal += topping.extraPrice * item.quantity;
+        });
+      }
+
+      return total + itemTotal;
+    }, 0);
   };
 
   const getItemCount = () => {

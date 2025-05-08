@@ -370,9 +370,21 @@ const CartPage: React.FC = () => {
           </button>
         </div>
 
-        {items.map((item) => (
-          <CartItem key={item.id} item={item} merchantId={merchant.id} />
-        ))}
+        {items.map((item) => {
+          // Create a unique key based on item ID and options
+          const itemKey = item.selectedOptions
+            ? `${item.id}-${item.selectedOptions.level?.value || ""}-${
+                item.selectedOptions.toppings
+                  ?.map((t) => t.value)
+                  .sort()
+                  .join("-") || ""
+              }`
+            : item.id.toString();
+
+          return (
+            <CartItem key={itemKey} item={item} merchantId={merchant.id} />
+          );
+        })}
 
         <div className="mt-4 pt-4">
           <div className="flex justify-between mb-2">

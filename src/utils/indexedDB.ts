@@ -1,7 +1,7 @@
 import { MenuItem, CartItem, Merchant } from "../types";
 
 const DB_NAME = "diorderFoodDB";
-const DB_VERSION = 3; // Increased version number
+const DB_VERSION = 5; // Increased version number to trigger upgrade
 
 interface DBSchema {
   menuItems: MenuItem[];
@@ -14,81 +14,60 @@ class IndexedDBService {
 
   async initDB(): Promise<void> {
     return new Promise((resolve, reject) => {
-      const handleInitDB = () => {
-        const request = indexedDB.open(DB_NAME, DB_VERSION);
+      const request = indexedDB.open(DB_NAME, DB_VERSION);
 
-        request.onerror = (event) => {
-          // Check if the error is due to version mismatch
-          const error = (event.target as IDBOpenDBRequest).error;
-          if (error && error.name === "VersionError") {
-            // console.warn(
-            //   "IndexedDB version mismatch. Deleting database and trying again..."
-            // );
-            // Delete the database and try again
-            const deleteRequest = indexedDB.deleteDatabase(DB_NAME);
-            deleteRequest.onsuccess = () => {
-              // console.log("Database deleted successfully. Reopening...");
-              // Call initDB again after successful deletion
-              setTimeout(() => this.initDB().then(resolve).catch(reject), 100);
-            };
-            deleteRequest.onerror = () => {
-              // console.error("Could not delete database", deleteRequest.error);
-              reject(deleteRequest.error);
-            };
-          } else {
-            // console.error("Database error:", event);
-            reject(request.error);
-          }
-        };
-
-        request.onsuccess = () => {
-          this.db = request.result;
-          resolve();
-        };
-
-        request.onupgradeneeded = (event) => {
-          const db = (event.target as IDBOpenDBRequest).result;
-
-          // Delete existing stores to ensure clean upgrade
-          if (db.objectStoreNames.contains("menuItems")) {
-            db.deleteObjectStore("menuItems");
-          }
-          if (db.objectStoreNames.contains("cartItems")) {
-            db.deleteObjectStore("cartItems");
-          }
-          if (db.objectStoreNames.contains("merchantInfo")) {
-            db.deleteObjectStore("merchantInfo");
-          }
-
-          // Create object stores with proper configuration
-          const menuStore = db.createObjectStore("menuItems", {
-            keyPath: "id",
-            autoIncrement: true,
-          });
-          menuStore.createIndex("by_merchant", "merchant_id", {
-            unique: false,
-          });
-
-          db.createObjectStore("cartItems", {
-            keyPath: "id",
-            autoIncrement: true,
-          });
-          db.createObjectStore("merchantInfo", {
-            keyPath: "id",
-            autoIncrement: true,
-          });
-        };
+      request.onerror = () => {
+        reject(request.error);
       };
 
-      handleInitDB();
+      request.onsuccess = () => {
+        this.db = request.result;
+        resolve();
+      };
+
+      request.onupgradeneeded = (event) => {
+        const db = (event.target as IDBOpenDBRequest).result;
+
+        // Delete existing stores to ensure clean upgrade
+        if (db.objectStoreNames.contains("menuItems")) {
+          db.deleteObjectStore("menuItems");
+        }
+        if (db.objectStoreNames.contains("cartItems")) {
+          db.deleteObjectStore("cartItems");
+        }
+        if (db.objectStoreNames.contains("merchantInfo")) {
+          db.deleteObjectStore("merchantInfo");
+        }
+
+        // Create object stores with proper configuration
+        const menuStore = db.createObjectStore("menuItems", {
+          keyPath: "id",
+          autoIncrement: true,
+        });
+        menuStore.createIndex("by_merchant", "merchant_id", {
+          unique: false,
+        });
+
+        // Create cart store with composite key
+        const cartStore = db.createObjectStore("cartItems", {
+          keyPath: ["id", "merchant_id", "itemKey"],
+        });
+        cartStore.createIndex("by_merchant", "merchant_id", {
+          unique: false,
+        });
+
+        db.createObjectStore("merchantInfo", {
+          keyPath: "id",
+          autoIncrement: true,
+        });
+      };
     });
   }
 
-  private getStore(
-    storeName: keyof DBSchema,
-    mode: IDBTransactionMode = "readonly"
-  ): IDBObjectStore {
-    if (!this.db) throw new Error("Database not initialized");
+  private getStore(storeName: string, mode: IDBTransactionMode = "readonly") {
+    if (!this.db) {
+      throw new Error("Database not initialized");
+    }
     const transaction = this.db.transaction(storeName, mode);
     return transaction.objectStore(storeName);
   }
@@ -158,17 +137,83 @@ class IndexedDBService {
     });
   }
 
-  // Specific methods for cart operations
+  // Cart methods
   async addToCart(item: CartItem): Promise<void> {
-    return this.update("cartItems", item);
-  }
+    const store = this.getStore("cartItems", "readwrite");
+    return new Promise((resolve, reject) => {
+      // Create a unique key for the item based on its options
+      const itemKey = item.selectedOptions
+        ? `${item.selectedOptions.level?.value || ""}-${
+            item.selectedOptions.toppings
+              ?.map((t) => t.value)
+              .sort()
+              .join("-") || ""
+          }`
+        : "default";
 
-  async removeFromCart(itemId: string | number): Promise<void> {
-    return this.delete("cartItems", itemId);
+      // Add the item with its unique key
+      const request = store.put({
+        ...item,
+        itemKey,
+      });
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
   }
 
   async getCart(): Promise<CartItem[]> {
-    return this.getAll("cartItems");
+    const store = this.getStore("cartItems");
+    return new Promise((resolve, reject) => {
+      const request = store.getAll();
+      request.onsuccess = () => {
+        // Ensure the returned items have the correct structure
+        const items = request.result.map((item: any) => ({
+          ...item,
+          selectedOptions: item.selectedOptions
+            ? {
+                level: item.selectedOptions.level
+                  ? {
+                      label: item.selectedOptions.level.label,
+                      value: item.selectedOptions.level.value,
+                      extraPrice: item.selectedOptions.level.extraPrice,
+                    }
+                  : undefined,
+                toppings: item.selectedOptions.toppings?.map(
+                  (topping: any) => ({
+                    label: topping.label,
+                    value: topping.value,
+                    extraPrice: topping.extraPrice,
+                  })
+                ),
+              }
+            : undefined,
+        }));
+        resolve(items);
+      };
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async removeFromCart(
+    id: number,
+    merchantId: number,
+    itemKey: string
+  ): Promise<void> {
+    const store = this.getStore("cartItems", "readwrite");
+    return new Promise((resolve, reject) => {
+      const request = store.delete([id, merchantId, itemKey]);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async clearCart(): Promise<void> {
+    const store = this.getStore("cartItems", "readwrite");
+    return new Promise((resolve, reject) => {
+      const request = store.clear();
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
   }
 
   // Methods for menu items
