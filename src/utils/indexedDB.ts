@@ -9,6 +9,10 @@ interface DBSchema {
   merchantInfo: Merchant[];
 }
 
+interface DBItem extends CartItem {
+  itemKey: string;
+}
+
 class IndexedDBService {
   private db: IDBDatabase | null = null;
 
@@ -167,7 +171,7 @@ class IndexedDBService {
       const request = store.getAll();
       request.onsuccess = () => {
         // Ensure the returned items have the correct structure
-        const items = request.result.map((item: any) => ({
+        const items = request.result.map((item: DBItem) => ({
           ...item,
           selectedOptions: item.selectedOptions
             ? {
@@ -178,13 +182,11 @@ class IndexedDBService {
                       extraPrice: item.selectedOptions.level.extraPrice,
                     }
                   : undefined,
-                toppings: item.selectedOptions.toppings?.map(
-                  (topping: any) => ({
-                    label: topping.label,
-                    value: topping.value,
-                    extraPrice: topping.extraPrice,
-                  })
-                ),
+                toppings: item.selectedOptions.toppings?.map((topping) => ({
+                  label: topping.label,
+                  value: topping.value,
+                  extraPrice: topping.extraPrice,
+                })),
               }
             : undefined,
         }));

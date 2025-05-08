@@ -242,14 +242,35 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
 
       if (!existingItem) return prevState;
 
-      const updatedMerchantItems =
-        existingItem.quantity > 1
-          ? merchantItems.map((cartItem) =>
-              cartItem.id === itemId
-                ? { ...cartItem, quantity: cartItem.quantity - 1 }
-                : cartItem
-            )
-          : merchantItems.filter((cartItem) => cartItem.id !== itemId);
+      // Create a unique identifier for the item based on its options
+      const itemKey = existingItem.selectedOptions
+        ? `${existingItem.id}-${existingItem.selectedOptions.level?.value}-${
+            existingItem.selectedOptions.toppings
+              ?.map((t) => t.value)
+              .sort()
+              .join("-") || ""
+          }`
+        : existingItem.id.toString();
+
+      const updatedMerchantItems = merchantItems
+        .map((cartItem) => {
+          const cartItemKey = cartItem.selectedOptions
+            ? `${cartItem.id}-${cartItem.selectedOptions.level?.value}-${
+                cartItem.selectedOptions.toppings
+                  ?.map((t) => t.value)
+                  .sort()
+                  .join("-") || ""
+              }`
+            : cartItem.id.toString();
+
+          if (cartItemKey === itemKey) {
+            return cartItem.quantity > 1
+              ? { ...cartItem, quantity: cartItem.quantity - 1 }
+              : null;
+          }
+          return cartItem;
+        })
+        .filter(Boolean) as CartItem[];
 
       return {
         ...prevState,
