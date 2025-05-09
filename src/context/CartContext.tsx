@@ -10,6 +10,7 @@ import supabase from "../utils/supabase/client";
 import { isCurrentlyOpen } from "../utils/merchantUtils";
 import { Merchant } from "../types";
 import { indexedDBService } from "../utils/indexedDB";
+import CustomAlert from "../components/CustomAlert";
 
 // Add a constant for localStorage key
 const CUSTOMER_INFO_STORAGE_KEY = "diorder_customer_info";
@@ -35,6 +36,7 @@ interface CartContextType {
   useMerchantInfo: (merchantId: number) => { name: string } | null;
   getItemQuantity: (itemId: number) => number;
   getSubtotal: () => number;
+  calculateDeliveryFee: () => number;
 }
 
 interface CartState {
@@ -77,6 +79,8 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
   const [state, setState] = useState<CartState>(getInitialState);
   const [isClearingCart, setIsClearingCart] = useState(false);
   const [isDBReady, setIsDBReady] = useState(false);
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
 
   // Initialize IndexedDB and load cart data
   useEffect(() => {
@@ -170,11 +174,31 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
     }
   }, [state.customerInfo]);
 
+  const calculateDeliveryFee = () => {
+    const totalItems = getItemCount();
+    const baseFee = 5000;
+    const multiplier = Math.ceil(totalItems / 20);
+    return baseFee * multiplier;
+  };
+
   const addToCart = (
     item: MenuItem,
     merchantId: number,
     quantity: number = 1
   ) => {
+    const currentItemCount = getItemCount();
+    const newItemCount = currentItemCount + quantity;
+
+    // Check if adding these items would exceed 20
+    if (currentItemCount <= 20 && newItemCount > 20) {
+      const newDeliveryFee = calculateDeliveryFee();
+      const message = `Pesanan Anda telah melebihi 20 item. Untuk memastikan pengiriman yang aman, ongkir akan disesuaikan menjadi Rp ${newDeliveryFee.toLocaleString(
+        "id-ID"
+      )} (berlaku kelipatan 20 item).`;
+      setAlertMessage(message);
+      setShowAlert(true);
+    }
+
     setState((prevState) => {
       const merchantItems = prevState.items[merchantId] || [];
 
@@ -520,9 +544,16 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
         useMerchantInfo,
         getItemQuantity,
         getSubtotal,
+        calculateDeliveryFee,
       }}
     >
       {children}
+      {showAlert && (
+        <CustomAlert
+          message={alertMessage}
+          onClose={() => setShowAlert(false)}
+        />
+      )}
     </CartContext.Provider>
   );
 };

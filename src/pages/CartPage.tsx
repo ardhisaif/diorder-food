@@ -12,7 +12,6 @@ import { indexedDBService } from "../utils/indexedDB";
 import { useSettings } from "../context/SettingsContext";
 
 const WHATSAPP_NUMBER = "628888465289";
-const DELIVERY_FEE = 5000;
 const VILLAGES = ["Duduksampeyan", "Sumengko", "Petisbenem", "Setrohadi"];
 
 const CartPage: React.FC = () => {
@@ -22,6 +21,7 @@ const CartPage: React.FC = () => {
     customerInfo,
     updateCustomerInfo,
     clearCart,
+    calculateDeliveryFee,
   } = useCart();
   const navigate = useNavigate();
   const { isServiceOpen } = useSettings();
@@ -128,7 +128,8 @@ const CartPage: React.FC = () => {
       return total;
     }, 0);
 
-    const totalWithDelivery = subtotal + DELIVERY_FEE;
+    const deliveryFee = calculateDeliveryFee();
+    const totalWithDelivery = subtotal + deliveryFee;
 
     // Format the order message for WhatsApp
     let message = `*PESANAN BARU*\n`;
@@ -200,7 +201,7 @@ const CartPage: React.FC = () => {
     message += `*RINGKASAN PEMBAYARAN*\n`;
     message += `━━━━━━━━━━━━━━━━━━━━━━━━\n`;
     message += `Subtotal: ${formatCurrency(subtotal)}\n`;
-    message += `Ongkir: ${formatCurrency(DELIVERY_FEE)}\n`;
+    message += `Ongkir: ${formatCurrency(deliveryFee)}\n`;
     message += `*TOTAL: ${formatCurrency(totalWithDelivery)}*\n\n`;
 
     if (customerInfo.notes) {
@@ -223,7 +224,7 @@ const CartPage: React.FC = () => {
         transaction_id: orderId,
         value: totalWithDelivery,
         currency: "IDR",
-        shipping: DELIVERY_FEE,
+        shipping: deliveryFee,
         items: merchantsWithItems.flatMap((merchant) => {
           if (isCurrentlyOpen(merchant.openingHours)) {
             const items = getMerchantItems(merchant.id);
@@ -452,7 +453,7 @@ const CartPage: React.FC = () => {
     }
     return total;
   }, 0);
-  const totalAmount = subtotal + DELIVERY_FEE;
+  const totalAmount = subtotal + calculateDeliveryFee();
 
   return (
     <div className="min-h-screen bg-gray-100 pb-32">
@@ -501,7 +502,9 @@ const CartPage: React.FC = () => {
                 </div>
                 <div className="flex justify-between">
                   <span>Ongkir</span>
-                  <span className="pl-2">{formatCurrency(DELIVERY_FEE)}</span>
+                  <span className="pl-2">
+                    {formatCurrency(calculateDeliveryFee())}
+                  </span>
                 </div>
               </div>
             </div>
