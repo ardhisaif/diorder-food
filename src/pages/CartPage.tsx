@@ -11,7 +11,7 @@ import { CartItemSkeleton } from "../components/Skeletons";
 import { indexedDBService } from "../utils/indexedDB";
 import { useSettings } from "../context/SettingsContext";
 
-const WHATSAPP_NUMBER = "628888465289";
+const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER;
 const VILLAGES = ["Duduksampeyan", "Sumengko", "Petisbenem", "Setrohadi"];
 
 const CartPage: React.FC = () => {

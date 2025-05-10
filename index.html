@@ -20,7 +20,7 @@
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://diorder.vercel.app/" />
+    <meta property="og:url" content="%VITE_APP_URL%" />
     <meta property="og:title" content="diorder - Pesan Makanan Online" />
     <meta
       property="og:description"
@@ -28,12 +28,12 @@
     />
     <meta
       property="og:image"
-      content="https://sewwxvvscpmvinihyrcq.supabase.co/storage/v1/object/public/merchant//diorder-home.png"
+      content="%VITE_SUPABASE_STORAGE_URL%/merchant//diorder-home.png"
     />
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content="https://diorder.vercel.app/" />
+    <meta property="twitter:url" content="%VITE_APP_URL%" />
     <meta property="twitter:title" content="diorder - Pesan Makanan Online" />
     <meta
       property="twitter:description"
@@ -41,7 +41,7 @@
     />
     <meta
       property="twitter:image"
-      content="https://sewwxvvscpmvinihyrcq.supabase.co/storage/v1/object/public/merchant//diorder-home.png"
+      content="%VITE_SUPABASE_STORAGE_URL%/merchant//diorder-home.png"
     />
 
     <!-- Mobile Web App -->
@@ -73,7 +73,7 @@
     <!-- Google tag (gtag.js) -->
     <script
       async
-      src="https://www.googletagmanager.com/gtag/js?id=G-3M4S6YNX4K"
+      src="https://www.googletagmanager.com/gtag/js?id=%VITE_GA_MEASUREMENT_ID%"
     ></script>
     <script>
       window.dataLayer = window.dataLayer || [];
@@ -81,7 +81,7 @@
         dataLayer.push(arguments);
       }
       gtag("js", new Date());
-      gtag("config", "G-3M4S6YNX4K");
+      gtag("config", "%VITE_GA_MEASUREMENT_ID%");
     </script>
   </head>
   <body>
